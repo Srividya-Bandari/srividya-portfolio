@@ -1,0 +1,61 @@
+---
+title: "AI Coding Agents Won't Replace Engineers Who Understand Systems"
+date: "2024-01-10"
+readingTime: "5 min read"
+tags: ["AI", "Engineering", "Opinion"]
+excerpt: "AI tools make good engineers faster. They don't make shallow engineers deep. Here's why fundamentals matter more than ever."
+---
+
+I use AI coding tools every day. They are genuinely impressive. Claude can write a credible Kafka consumer in thirty seconds. Copilot finishes my type signatures before I finish thinking them. The productivity lift is real and I'm not going to pretend otherwise.
+
+I'm also watching a slow-motion problem unfold. Junior engineers around me are reaching for AI for things they should be reaching for first principles for, and the result is code that *runs* but that the author cannot defend. That's a worse position than not writing the code at all.
+
+Let me try to articulate the distinction I keep coming back to.
+
+## The Observation
+
+AI tools are extraordinary at the *mechanical* parts of engineering. Boilerplate. Translation between languages. Idiomatic patterns. Filling in the obvious shape of code given a clear specification. These are real skills and the tools have, in a meaningful sense, automated them.
+
+What the tools do not do, and as far as I can tell cannot do, is make the *judgment calls* that turn a working program into a working system. They can't tell you whether your problem actually needs a Kafka topic or whether a Postgres queue would do. They can't tell you that your retry logic is going to amplify a partial outage into a full one. They can't tell you that your "cache" is actually a database with extra steps and that you've quietly created two sources of truth.
+
+## The Concern
+
+What worries me is not the tools. The tools are fine. What worries me is the trajectory of an engineer who learns to *use* the tools without ever learning the things the tools cannot do.
+
+Concrete example. AI can write a Kafka consumer that reads from a topic, processes a message, and commits the offset. That code will run. It will appear to work in a happy path. What it will not do, unless you specifically know to ask, is handle the case where the consumer crashes after processing but before committing the offset, which will cause the message to be re-delivered, which will cause your downstream side effect to happen twice.
+
+That's not a bug in the AI's code. That's a bug in the *specification* the engineer gave it. And the only way to give the right specification is to understand exactly-once vs. at-least-once delivery, why exactly-once is so expensive, when at-least-once with idempotency is the right composition, and what idempotency actually means at your data layer. None of that is in the prompt. None of it can be discovered from the prompt. It comes from the engineer.
+
+## The Argument
+
+The framing I've landed on: AI is a *judgment amplifier*. It takes what you already know and multiplies your speed. It does not generate judgment from nothing.
+
+If you have good judgment, AI makes you significantly faster at executing on it. You can prototype designs at five times the speed, throw away nine out of ten, and arrive at the right answer in a week instead of a month.
+
+If you have shallow judgment, AI lets you produce more code, faster, that has the same shallow problems. The output looks polished &mdash; AI tools are good at idiomatic code &mdash; but the underlying reasoning isn't there. And then when production breaks, you're debugging a system you didn't really design.
+
+The tooling does not amplify what isn't there.
+
+## What Actually Matters
+
+I find myself caring more, not less, about fundamentals than I did three years ago. Specifically:
+
+**Data structures.** Not because you'll be asked to implement a B-tree on a whiteboard. Because every database on earth is one of half a dozen data structures wearing different clothes, and understanding which one means understanding when your query will be slow.
+
+**Systems thinking.** What happens at the boundary between two components, where neither one fully controls the contract, is where most production bugs live. AI cannot reason about your system's boundaries because it cannot see them.
+
+**How databases actually work.** Indexes, query planning, transactions, isolation levels, write-ahead logs. Not at the level of "I read about it once," but at the level of "I can predict what this query will do under load." This is the single most reliable predictor of which engineers ship things that don't break.
+
+**The cost model of a network call.** Every call across a process boundary is several orders of magnitude more expensive than one within it. Engineers who internalize this design fundamentally different systems than engineers who don't.
+
+These don't show up in any AI prompt. They show up in *how you frame the prompt*, what you accept as an answer, and what you push back on. The engineer in the chair has to bring them.
+
+## Conclusion
+
+Use the tools. I do. They're net wins, and refusing them on principle is throwing away productivity for no good reason.
+
+Also understand systems deeply. Read the papers. Read the boring ops postmortems. Spend time in the parts of your stack that aren't sexy. Understand why the database is shaped the way it is. Understand why Kafka has the consistency model it has. Understand the cost of a network call, the cost of a disk seek, the cost of a context switch.
+
+These two things are not in conflict. The engineers who pair AI tooling with deep fundamentals are going to be the most productive engineers in the field for the next decade. The engineers who skip fundamentals because the tools "handle that part" are setting themselves up for a career where they ship code that runs but cannot be defended.
+
+I know which group I want to be in.

@@ -1,0 +1,50 @@
+---
+title: "Distributed Build Deduplication System"
+tagline: "SHA-based dedup + Redis caching cut Docker image redundancy by 50% across MagicLeap's CI/CD"
+tech: ["Redis", "RabbitMQ", "Python", "Docker", "OpenSearch", "Logstash"]
+description: "Distributed deduplication system built at MagicLeap to eliminate redundant Docker image layers across 170+ concurrent CI/CD builds, saving 1,000+ hours of monthly compute time."
+github: "#"
+featured: true
+date: "2022-12-01"
+---
+
+## The Problem
+
+MagicLeap's CI/CD infrastructure ran hundreds of concurrent builds across 150+ repositories. Each build produced Docker images — base images, intermediate layers, final artifacts — and a significant fraction of those images were functionally identical: the same base layer rebuilt from scratch because the pipeline didn't know it had been built before.
+
+The redundancy was expensive in two ways. First, compute: rebuilding identical layers consumes CPU and I/O time that could be used for builds that actually produce new artifacts. Second, storage: Docker registries were accumulating duplicate layers faster than retention policies could clean them up. The Lead Verifier system — which decided whether a build needed to run at all — was also poorly tuned, triggering full builds on repository changes that didn't affect build outputs.
+
+The mandate was to reduce redundant work across the build fleet without changing how individual build pipelines were authored.
+
+## Architecture
+
+The solution has two parts that work together: deduplication at the image layer level, and smarter build-triggering logic upstream.
+
+**SHA-based deduplication with Redis.** Every Docker image layer has a content-addressable SHA256 digest. Before a build pushes a new image, the system computes the layer digests and checks them against a Redis set. If all layers are already present in the registry, the build skips the push and returns the existing image reference instead. The Redis check adds single-digit milliseconds to the build path; the skip saves minutes of registry push time per duplicate.
+
+**RabbitMQ event bus.** Build events (start, layer push, completion, cache hit) are published to RabbitMQ topics. This decouples the deduplication logic from the build runners — build pipelines emit events; the deduplication service consumes them. It also gives us a stream of build lifecycle data that we can consume for metrics and analytics.
+
+**Logstash + OpenSearch observability pipeline.** Build events flow from RabbitMQ through Logstash into OpenSearch, where they're indexed for real-time search and aggregation. Dashboards show cache hit rates by repository, build durations, and redundancy trends over time. This was the visibility layer that made it possible to quantify the savings and identify repositories with the most optimization headroom.
+
+**Lead Verifier optimization.** The Lead Verifier was the upstream system that decided whether a push to a repository should trigger a build. Its triggering logic was coarse — it treated all file changes as build-relevant, which meant documentation changes and test fixture updates triggered full builds. I updated the triggering rules to use path filters, so changes to non-build-affecting paths (docs, test data, CI configuration) no longer trigger downstream builds.
+
+## Key Decisions
+
+**Redis over a database for the dedup index.** The deduplication check is on the hot path of every build push — it needs to be fast and it needs to handle concurrent writes safely. Redis sets with atomic SADD are a good fit: sub-millisecond reads, built-in atomicity, and we can shard by repository prefix if the keyspace grows. A relational database would have worked but added unnecessary latency and operational overhead for what is fundamentally a membership check.
+
+**RabbitMQ for decoupling, not for ordering.** We don't need ordered delivery for build events — what we need is durability and fan-out. A build completion event needs to reach the dedup index, the metrics pipeline, and the retention system. RabbitMQ's exchange/binding model handles fan-out cleanly, and durable queues give us delivery guarantees if any consumer is temporarily down.
+
+**Path filters, not magic.** The Lead Verifier improvement was deliberately conservative: explicit path filters that the repository owner configures, not a system that tries to infer build relevance automatically. Inference gets it wrong in ways that are hard to debug. Explicit filters put the responsibility on the team that owns the repository, which is where it belongs.
+
+## Results
+
+- **50% reduction** in Docker image redundancy across CI/CD environments
+- **170+ concurrent distributed builds** supported with real-time metric visibility via OpenSearch dashboards
+- **1,000+ hours of monthly compute time saved** through Lead Verifier optimization and deduplication
+- Observability pipeline processing build events from all 150+ repositories with sub-minute indexing latency
+
+## What I'd Do Differently
+
+The Redis TTL for dedup keys was set to a fixed 30 days, which was fine for the repositories with frequent builds but meant that slow-moving repositories sometimes missed cache entries that were still valid. A TTL policy based on build frequency per repository — longer TTLs for repos that build less often — would have been more accurate.
+
+On the Lead Verifier side: the path filter configuration lived in a YAML file committed to each repository. That worked, but there was no validation that the paths were syntactically correct or matched any real files. A few teams shipped broken filters and wondered why their builds weren't being skipped. A validation step in the CI pipeline itself would have caught those earlier.

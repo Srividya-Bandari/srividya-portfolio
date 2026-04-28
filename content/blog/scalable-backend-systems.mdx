@@ -1,0 +1,69 @@
+---
+title: "What I Learned Building Scalable Backend Systems"
+date: "2024-03-15"
+readingTime: "8 min read"
+tags: ["Backend", "Distributed Systems", "Architecture"]
+excerpt: "Six lessons from building systems that process millions of events a day — most of which I had to learn the hard way."
+---
+
+I've spent the last few years building backend systems that process millions of events a day. Most of what I know now I learned by being wrong, fixing it at 2 a.m., and writing a postmortem the next morning. Here are six of the lessons that have changed the most about how I write code.
+
+## 1. Design for failure, not uptime
+
+When I started, I thought reliability was about preventing bad things from happening. Better validation, more thorough testing, more careful deployments. That mindset took me about a year to fully unlearn.
+
+The mental model that replaced it: every external dependency is going to fail, and the only useful question is what your system does when it does. The network call to the payments API will time out. The database will become unavailable for 90 seconds during a failover. The Kafka broker will rebalance in the middle of your batch. None of those are bugs. They are baseline operating conditions.
+
+The real design question isn't "how do I make this not fail." It's "what is the right behavior when this fails." Sometimes the answer is retry. Sometimes it's fail-open. Sometimes it's degrade to a cached value. Sometimes it's drop the request and emit a metric. But the answer needs to exist before the failure does, not be invented at 2 a.m.
+
+## 2. Measure before you optimize
+
+I had a project early on where the VIN decoding API was slow, and everyone &mdash; me included &mdash; assumed Postgres was the bottleneck. We were on the verge of investing two engineering-weeks into a denormalization project when someone said "have we actually profiled this?"
+
+We hadn't. We profiled it. The bottleneck was upstream HTTP calls fanning out synchronously, with no pooling, with default timeouts. Postgres was fine. Postgres had been fine the whole time.
+
+Now I have a rule. Before any optimization work, the first deliverable is a measurement that shows where time is actually being spent. Not where I think it's being spent. Where it actually is. Sometimes the measurement itself is the project, because once you can see the data, the fix becomes obvious.
+
+## 3. Exactly-once semantics are a lie (but idempotency is real)
+
+People want exactly-once delivery the way they want time travel. It's appealing as a concept and there's no clean implementation in distributed systems with networks that drop, brokers that rebalance, and consumers that crash mid-batch.
+
+The thing you can have is *idempotency*: an operation that produces the same result whether you call it once or seven times. That's not just a workaround for weak delivery guarantees. It's a stronger property than exactly-once would be, because it survives bugs in your delivery layer that exactly-once couldn't have prevented anyway.
+
+Most of my hard-won design experience compresses to: assume at-least-once delivery, design every consumer to be idempotent, and use a deduplication layer where exactly-once *behavior* is needed downstream. The composition is cheaper to build, easier to debug, and more robust than any "exactly-once" Kafka feature flag.
+
+## 4. Redis is a tool, not a solution
+
+I see Redis reached for the same way I see microservices reached for &mdash; as the answer when the question is "we need to scale" or "we need things to be faster." Sometimes it's the right answer. Often it isn't.
+
+Redis is great when you have a clear access pattern that hits the same keys frequently, when those keys are small, when the data is okay to lose, and when invalidation has a clean answer. It's a poor fit when any of those don't hold. Putting "anything Postgres-shaped" into Redis with a TTL is a recipe for a system that is harder to reason about, has data freshness bugs that show up only under load, and adds a stateful dependency that's now also a single point of failure.
+
+The most useful reframe I have: Redis isn't a database, and it isn't a cache. It's both, depending on how you use it, and you have to be honest about which mode you're in. Cache mode means correctness comes from the underlying source of truth. Database mode means Redis *is* the source of truth, and you've signed up for everything that implies.
+
+## 5. Boring technology outlives clever technology
+
+There is a graveyard of internal tools and frameworks that were once the exciting new thing at some company. Kafka is one of the survivors. So is Postgres. So is Linux. So is HTTP. Notice anything?
+
+The technologies that dominate a decade later are almost always the ones that were boring on day one. Easy to operate. Easy to hire for. Easy to debug. Predictable failure modes. Documented behaviors. Boring is a feature.
+
+The cleverest piece of technology I've worked with that didn't survive a year was an in-house event store that wanted to replace Kafka. It was *better* than Kafka by certain narrow benchmarks. It also had no community, no operational expertise outside of two engineers, and no battle-tested behavior when things went wrong. The first time we hit a partition leader election bug, it took us a week to diagnose. Kafka would have taken an afternoon. We rewrote the system on Kafka and never looked back.
+
+I now ask, before adopting any non-boring technology: is this *enough* better to justify being the only team in the world that operates it? Almost always the answer is no.
+
+## 6. The most important system property is observability
+
+If I could only convince a team of one engineering principle, it would be this. A system that you cannot observe is a system you cannot operate, regardless of how clean the code is.
+
+Observability is three things, and you need all three:
+
+- **Metrics** that tell you whether the system is healthy at a glance, with thresholds that page you when it isn't.
+- **Logs** that let you reconstruct what happened in a specific request, ideally with enough trace context to follow it across service boundaries.
+- **Traces** that let you see where time is being spent and where errors are originating in a multi-hop call graph.
+
+Most teams I've worked with under-invest in this and then are surprised when they can't debug their own system in production. The investment is not optional. If you ship a service that is not adequately observable, you have shipped a service that you are unable to operate, and that is a more fundamental kind of broken than any bug.
+
+## Closing
+
+None of these lessons are novel. You can find every one of them in better-written form in the books on every senior engineer's shelf. What I will say is that reading them and *believing* them are very different things. I read a version of all six of these as a junior engineer and nodded politely. I only believed them after I'd been on the wrong side of each one in production.
+
+If you're earlier in your career and one of these sounds wrong to you: that's fine. Hold on to your version. The interesting part of engineering is the part where you find out which of your beliefs survive contact with a real system.

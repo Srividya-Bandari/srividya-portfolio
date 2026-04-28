@@ -1,0 +1,51 @@
+---
+title: "VIN Decoding Microservice"
+tagline: "Normalized multi-vendor vehicle data into a consistent internal contract at Openlane"
+tech: ["Java", "Spring Boot", "PostgreSQL", "Redis", "ASP.NET Core"]
+description: "Java Spring Boot microservice that ingested VIN data from multiple external vendors and normalized it into a single internal contract used by downstream inspection and pricing systems."
+github: "#"
+featured: true
+date: "2024-06-01"
+---
+
+## The Problem
+
+Openlane's inspection platform relied on Vehicle Identification Number (VIN) data from multiple external vendors — each with a different response schema, reliability profile, and latency characteristic. Upstream services were making raw vendor calls directly and handling the schema differences themselves, which meant every consumer had its own interpretation of what a "decoded VIN" looked like.
+
+The downstream effects were predictable: subtle data inconsistencies between services, duplicated vendor integration logic, and no single place to enforce data quality rules. Changing vendors meant touching every consumer. Adding a new data field meant coordinating across teams. The system had no seams.
+
+The goal was to build a centralized VIN decoding microservice that would own all vendor relationships, normalize responses into one internal contract, and give downstream consumers a stable, versioned API they could depend on regardless of what was happening upstream.
+
+## Architecture
+
+The service is a Java Spring Boot application exposing a REST API. At a high level:
+
+**1. Vendor abstraction layer.** Each external vendor is wrapped in an adapter that implements a common interface. The adapters handle auth, transport, timeout configuration, and mapping the vendor's raw response to a normalized `VinDecodeResult`. Adding or swapping a vendor means implementing one adapter — no consumer changes.
+
+**2. Fallback chain.** Vendors are ranked by data quality and cost. The service tries the primary vendor first; on timeout or error, it falls back down the chain. This keeps the API available even when a vendor is degraded, and lets us route away from expensive vendors when cheaper ones are sufficient.
+
+**3. Redis caching layer.** VIN data is stable — a 2018 Honda Civic is always a 2018 Honda Civic. We cache decoded results in Redis with a long TTL, keyed by VIN. Cache hit rate quickly reached ~85%, which eliminated the majority of vendor API calls and flattened our third-party spend.
+
+**4. Internal contract enforcement.** The normalized `VinDecodeResult` struct is the only thing downstream consumers ever see. Required fields are validated before the response is returned; missing or malformed vendor data is flagged with a structured error rather than silently passed through.
+
+## Key Decisions
+
+**One internal contract, not one-per-vendor.** The temptation when integrating multiple data sources is to expose a union of all their fields. We avoided that. The internal contract contains only fields with clear ownership and consumer demand. Vendor-specific fields that don't map cleanly are dropped or placed in an `extended` namespace that consumers explicitly opt into.
+
+**Fallback, not aggregation.** We considered aggregating across vendors to fill in gaps, but the complexity wasn't worth it for the data quality improvement. A single authoritative source with a ranked fallback chain was simpler to reason about, simpler to test, and simpler to debug when a vendor had data quality issues.
+
+**Redis TTL strategy.** Vehicle specifications don't change, but recall data and title status can. We used long TTLs for immutable spec fields and shorter TTLs for fields that can evolve post-manufacture. This kept the cache useful while keeping stale data risk bounded.
+
+## Results
+
+- **p95 latency reduced from 420ms → 260ms** through PostgreSQL query optimization and caching
+- **~85% cache hit rate** in steady state, substantially reducing vendor API spend
+- **Single internal contract** adopted by all downstream consumers — no more per-consumer vendor handling
+- **97% test coverage** across the service, with integration tests covering all vendor adapters and fallback paths
+- **45% reduction in production regressions** after the coverage push, measured over the following quarter
+
+## What I'd Do Differently
+
+The fallback chain ordering was configured in code initially, which meant changing vendor priority required a deploy. I moved it to configuration-driven settings later, but it should have been there from the start — it's exactly the kind of thing that changes based on vendor performance and contract terms, not engineering decisions.
+
+I'd also invest earlier in synthetic monitoring against real vendor endpoints. Our unit tests mocked vendor responses, which was fast but caught a category of vendor-side schema drift bugs late. A small suite of scheduled integration tests against staging credentials would have caught those earlier.
