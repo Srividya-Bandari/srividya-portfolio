@@ -2,7 +2,8 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Download, Github, Linkedin, Mail } from "lucide-react";
+import { ArrowRight, Github, Linkedin, Mail } from "lucide-react";
+import { ResumeDownloadModal } from "@/components/ui/ResumeDownloadModal";
 
 export function Hero() {
   return (
@@ -68,13 +69,10 @@ export function Hero() {
               View My Work
               <ArrowRight size={16} />
             </Link>
-            <Link
-              href="/resume"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md border border-border bg-surface text-foreground font-medium hover:border-accent hover:text-accent transition-colors"
-            >
-              <Download size={16} />
-              Resume
-            </Link>
+            <ResumeDownloadModal
+              triggerClassName="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md border border-border bg-surface text-foreground font-medium hover:border-accent hover:text-accent transition-colors"
+              triggerLabel="Resume"
+            />
           </motion.div>
 
           <motion.div

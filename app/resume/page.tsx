@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Download, Github, Linkedin, Mail, MapPin, Phone } from "lucide-react";
+import { Github, Linkedin, Mail, MapPin, Phone } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { ResumeDownloadModal } from "@/components/ui/ResumeDownloadModal";
 
 export const metadata: Metadata = {
   title: "Resume",
@@ -105,14 +106,7 @@ export default function ResumePage() {
           <p className="text-sm text-muted">
             View below or download a PDF copy.
           </p>
-          <a
-            href="/resume.pdf"
-            download="Srividya-Bandari-Resume.pdf"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            <Download size={14} />
-            Download PDF
-          </a>
+          <ResumeDownloadModal />
         </div>
 
         {/* Header */}
