@@ -1,50 +1,52 @@
 ---
-title: "Distributed Build Deduplication System"
-tagline: "SHA-based dedup + Redis caching cut Docker image redundancy by 50% across MagicLeap's CI/CD"
-tech: ["Redis", "RabbitMQ", "Python", "Docker", "OpenSearch", "Logstash"]
-description: "Distributed deduplication system built at MagicLeap to eliminate redundant Docker image layers across 170+ concurrent CI/CD builds, saving 1,000+ hours of monthly compute time."
+title: "Real-Time DDoS Detection Pipeline"
+tagline: "Kafka + Flink pipeline ingesting 2M+ network flow records/sec, cutting detect-to-mitigate latency from 25s to under 8s"
+tech: ["Kafka", "Apache Flink", "Java", "Go", "gRPC", "Redis", "RocksDB", "AWS"]
+description: "Real-time DDoS detection and automated mitigation system built at Infosys — stateful Flink processing over Kafka at 2M+ records/sec, with a Go/Java orchestration service pushing staged BGP and ACL mitigations over gRPC."
 github: "#"
 featured: true
-date: "2022-12-01"
+date: "2021-06-01"
 ---
 
 ## The Problem
 
-MagicLeap's CI/CD infrastructure ran hundreds of concurrent builds across 150+ repositories. Each build produced Docker images — base images, intermediate layers, final artifacts — and a significant fraction of those images were functionally identical: the same base layer rebuilt from scratch because the pipeline didn't know it had been built before.
+The system I joined at Infosys was protecting a set of large enterprise clients from volumetric network attacks. Detection was happening, but slowly — the pipeline that ingested raw network flow records, classified traffic, and triggered mitigations had end-to-end latency in the 25-second range. At volumetric attack scales, 25 seconds is a long time. Client SLAs required mitigations to be in place under 8 seconds from detection.
 
-The redundancy was expensive in two ways. First, compute: rebuilding identical layers consumes CPU and I/O time that could be used for builds that actually produce new artifacts. Second, storage: Docker registries were accumulating duplicate layers faster than retention policies could clean them up. The Lead Verifier system — which decided whether a build needed to run at all — was also poorly tuned, triggering full builds on repository changes that didn't affect build outputs.
+There were two separate problems. First, the detection pipeline itself wasn't built for the throughput we were seeing: 2M+ network flow records per second during attack peaks, with bursty spikes significantly higher. The existing architecture processed records in micro-batches with too much I/O on the hot path. Second, the mitigation system was manual — engineers received alerts and pushed BGP and ACL changes by hand, which added human latency and room for error.
 
-The mandate was to reduce redundant work across the build fleet without changing how individual build pipelines were authored.
+The work was to fix both: rebuild the detection pipeline for real throughput, and build an orchestration service that automated the mitigation path with appropriate safeguards.
 
 ## Architecture
 
-The solution has two parts that work together: deduplication at the image layer level, and smarter build-triggering logic upstream.
+**Detection pipeline: Kafka + stateful Flink.** Network flow records are ingested from collection agents onto Kafka topics partitioned by source IP prefix. A Flink streaming job reads from these topics and maintains stateful per-IP-prefix windows using RocksDB-backed state. For each window, the job computes adaptive baselines using EWMA and runs heavy-hitter detection using Count-Min Sketch — a probabilistic data structure that gives accurate frequency estimates with bounded memory.
 
-**SHA-based deduplication with Redis.** Every Docker image layer has a content-addressable SHA256 digest. Before a build pushes a new image, the system computes the layer digests and checks them against a Redis set. If all layers are already present in the registry, the build skips the push and returns the existing image reference instead. The Redis check adds single-digit milliseconds to the build path; the skip saves minutes of registry push time per duplicate.
+When a prefix's traffic crosses an anomaly threshold relative to its baseline, the Flink job emits a detection event downstream. The window sizes are tunable per-client based on their attack history and traffic profile.
 
-**RabbitMQ event bus.** Build events (start, layer push, completion, cache hit) are published to RabbitMQ topics. This decouples the deduplication logic from the build runners — build pipelines emit events; the deduplication service consumes them. It also gives us a stream of build lifecycle data that we can consume for metrics and analytics.
+**Mitigation orchestration: Go + Java over gRPC.** Detection events flow to a mitigation orchestration service that translates them into network-level actions: BGP Flowspec rules (for traffic shaping and black-holing at upstream providers), RTBH (Remotely Triggered Black Hole) routes, and ACL updates on edge devices. The service is implemented as a gRPC server with client implementations in both Go (for the control plane) and Java (for integration with existing internal tooling).
 
-**Logstash + OpenSearch observability pipeline.** Build events flow from RabbitMQ through Logstash into OpenSearch, where they're indexed for real-time search and aggregation. Dashboards show cache hit rates by repository, build durations, and redundancy trends over time. This was the visibility layer that made it possible to quantify the savings and identify repositories with the most optimization headroom.
+Mitigations are staged — small BGP communities first, then RTBH if the attack persists, then ACLs as a last resort. Each stage requires an audit log entry. High-impact mitigations (full RTBH on a large prefix) require operator approval before execution. Every mitigation is reversible: rollback paths are pre-computed at dispatch time and can be triggered with a single API call.
 
-**Lead Verifier optimization.** The Lead Verifier was the upstream system that decided whether a push to a repository should trigger a build. Its triggering logic was coarse — it treated all file changes as build-relevant, which meant documentation changes and test fixture updates triggered full builds. I updated the triggering rules to use path filters, so changes to non-build-affecting paths (docs, test data, CI configuration) no longer trigger downstream builds.
+**Observability.** The full pipeline is instrumented with Prometheus metrics, Grafana dashboards, OpenTelemetry traces, and Splunk log aggregation. SLO dashboards track detect-to-mitigate latency percentiles, false positive rate, and pipeline availability. We ran regular chaos drills — killing Flink task managers, partition leaders, orchestration service nodes — to validate that recovery paths worked and latency SLOs held under component failures.
 
 ## Key Decisions
 
-**Redis over a database for the dedup index.** The deduplication check is on the hot path of every build push — it needs to be fast and it needs to handle concurrent writes safely. Redis sets with atomic SADD are a good fit: sub-millisecond reads, built-in atomicity, and we can shard by repository prefix if the keyspace grows. A relational database would have worked but added unnecessary latency and operational overhead for what is fundamentally a membership check.
+**Count-Min Sketch for heavy-hitter detection.** A naive approach would maintain exact per-IP counters, but at 2M+ records/sec with millions of distinct source IPs during attacks, exact counting requires memory that scales with the attack surface. Count-Min Sketch gives us frequency estimates with bounded memory and configurable error rate. The error rate is small enough that false positives at the detection level are caught by the threshold tuning; the occasional missed detection is acceptable given the false-positive cost.
 
-**RabbitMQ for decoupling, not for ordering.** We don't need ordered delivery for build events — what we need is durability and fan-out. A build completion event needs to reach the dedup index, the metrics pipeline, and the retention system. RabbitMQ's exchange/binding model handles fan-out cleanly, and durable queues give us delivery guarantees if any consumer is temporarily down.
+**EWMA baselines, not static thresholds.** Static thresholds don't work when client traffic profiles have daily, weekly, and seasonal patterns. EWMA-based baselines adapt to normal traffic variation, which means detection fires on anomalies relative to expected traffic rather than absolute volume. This substantially reduced false positive rates compared to the previous static-threshold approach.
 
-**Path filters, not magic.** The Lead Verifier improvement was deliberately conservative: explicit path filters that the repository owner configures, not a system that tries to infer build relevance automatically. Inference gets it wrong in ways that are hard to debug. Explicit filters put the responsibility on the team that owns the repository, which is where it belongs.
+**Staged mitigations with operator approval for high-impact actions.** Full RTBH on a large IP prefix can affect legitimate traffic — the blast radius is real. Requiring operator approval for those actions adds latency to the worst-case path, but the tradeoff was worth it. The automation handles 90%+ of mitigations without human involvement; the approval gate applies only to the small fraction where the risk of collateral damage is high.
 
 ## Results
 
-- **50% reduction** in Docker image redundancy across CI/CD environments
-- **170+ concurrent distributed builds** supported with real-time metric visibility via OpenSearch dashboards
-- **1,000+ hours of monthly compute time saved** through Lead Verifier optimization and deduplication
-- Observability pipeline processing build events from all 150+ repositories with sub-minute indexing latency
+- **2M+ network flow records/sec** ingested and classified in steady state; sustained through attack-peak burst traffic
+- **Detect-to-mitigate latency cut from 25s to under 8s** — well within client SLA requirements
+- **90%+ of approved mitigations automated** end-to-end, eliminating manual BGP/ACL changes for the common case
+- **40% reduction in compute and memory footprint** from Count-Min Sketch + EWMA vs. the previous exact-count approach
+- **99.97% pipeline availability** sustained over the measurement period, validated through regular chaos drills
+- **Mean time to mitigation reduced from 11s to 5s** after operator tooling improvements and automation
 
 ## What I'd Do Differently
 
-The Redis TTL for dedup keys was set to a fixed 30 days, which was fine for the repositories with frequent builds but meant that slow-moving repositories sometimes missed cache entries that were still valid. A TTL policy based on build frequency per repository — longer TTLs for repos that build less often — would have been more accurate.
+The RocksDB state backend worked well but required careful tuning — compaction settings, block cache sizes, write buffer configuration — that wasn't obvious upfront and had meaningful performance impact. I'd budget more time for state backend performance testing before production deployment.
 
-On the Lead Verifier side: the path filter configuration lived in a YAML file committed to each repository. That worked, but there was no validation that the paths were syntactically correct or matched any real files. A few teams shipped broken filters and wondered why their builds weren't being skipped. A validation step in the CI pipeline itself would have caught those earlier.
+The operator approval flow was bolted onto the orchestration service late in the project. It worked, but the UX was rough — approvals happened through a CLI that required knowing the right flags. A simple web UI for the approval workflow would have reduced operator errors and made the audit trail easier to navigate.

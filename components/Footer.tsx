@@ -29,7 +29,7 @@ export function Footer() {
             <Linkedin size={18} />
           </Link>
           <Link
-            href="mailto:srividyabandari98@gmail.com"
+            href="mailto:srividya.bandari.swe@gmail.com"
             aria-label="Email"
             className="text-muted hover:text-accent transition-colors"
           >

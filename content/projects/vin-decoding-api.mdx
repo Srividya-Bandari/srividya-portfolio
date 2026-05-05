@@ -1,51 +1,48 @@
 ---
-title: "VIN Decoding Microservice"
-tagline: "Normalized multi-vendor vehicle data into a consistent internal contract at Openlane"
-tech: ["Java", "Spring Boot", "PostgreSQL", "Redis", "ASP.NET Core"]
-description: "Java Spring Boot microservice that ingested VIN data from multiple external vendors and normalized it into a single internal contract used by downstream inspection and pricing systems."
+title: "RAG-Powered Document Q&A System"
+tagline: "FastAPI service for PDF ingestion, semantic retrieval, and grounded Q&A with 40% fewer irrelevant responses"
+tech: ["Python", "FastAPI", "FAISS", "Docker", "Vector Search"]
+description: "FastAPI-based retrieval-augmented generation service that ingests PDFs, semantically chunks and indexes them in FAISS, retrieves context-ranked passages, and returns grounded answers — with retrieval-quality checks that cut irrelevant responses by 40%."
 github: "#"
 featured: true
-date: "2024-06-01"
+date: "2024-09-01"
 ---
 
 ## The Problem
 
-Openlane's inspection platform relied on Vehicle Identification Number (VIN) data from multiple external vendors — each with a different response schema, reliability profile, and latency characteristic. Upstream services were making raw vendor calls directly and handling the schema differences themselves, which meant every consumer had its own interpretation of what a "decoded VIN" looked like.
+Retrieval-Augmented Generation (RAG) as a pattern is straightforward on paper: index your documents, retrieve relevant chunks at query time, feed them to an LLM as context. In practice, the hard part is retrieval quality — specifically, the cases where your retriever returns chunks that are semantically adjacent to the query but don't actually contain the information needed to answer it. When those chunks get passed to the LLM as context, you get confident-sounding answers that are either partially wrong or entirely fabricated.
 
-The downstream effects were predictable: subtle data inconsistencies between services, duplicated vendor integration logic, and no single place to enforce data quality rules. Changing vendors meant touching every consumer. Adding a new data field meant coordinating across teams. The system had no seams.
-
-The goal was to build a centralized VIN decoding microservice that would own all vendor relationships, normalize responses into one internal contract, and give downstream consumers a stable, versioned API they could depend on regardless of what was happening upstream.
+The project goal was to build a production-grade RAG service for PDF documents with two hard requirements: grounded answers (the system should cite the source passages it used) and quality gating (if retrieval confidence is too low, the system should say so rather than hallucinate).
 
 ## Architecture
 
-The service is a Java Spring Boot application exposing a REST API. At a high level:
+The service is built as a FastAPI application with four main stages.
 
-**1. Vendor abstraction layer.** Each external vendor is wrapped in an adapter that implements a common interface. The adapters handle auth, transport, timeout configuration, and mapping the vendor's raw response to a normalized `VinDecodeResult`. Adding or swapping a vendor means implementing one adapter — no consumer changes.
+**1. Ingestion and chunking.** PDFs are uploaded via a REST endpoint. The service extracts text, then applies semantic chunking: rather than splitting on fixed token counts, chunks are split at natural boundaries (section headings, paragraph breaks) and merged or split further to stay within a target token budget. Metadata — document title, page number, section heading — is preserved with each chunk.
 
-**2. Fallback chain.** Vendors are ranked by data quality and cost. The service tries the primary vendor first; on timeout or error, it falls back down the chain. This keeps the API available even when a vendor is degraded, and lets us route away from expensive vendors when cheaper ones are sufficient.
+**2. Embedding and FAISS indexing.** Chunks are embedded using a sentence-transformer model and stored in a FAISS index. FAISS's approximate nearest-neighbor search gives sub-millisecond retrieval even over large document collections. The index is persisted to disk and loaded at startup; new documents are added incrementally without full reindexing.
 
-**3. Redis caching layer.** VIN data is stable — a 2018 Honda Civic is always a 2018 Honda Civic. We cache decoded results in Redis with a long TTL, keyed by VIN. Cache hit rate quickly reached ~85%, which eliminated the majority of vendor API calls and flattened our third-party spend.
+**3. Retrieval and context ranking.** At query time, the query is embedded using the same model and the top-k chunks are retrieved from FAISS. A reranking step scores each retrieved chunk for relevance to the query using a cross-encoder — which is slower than the bi-encoder used for initial retrieval but more accurate. Chunks below a relevance threshold are dropped before being passed to the LLM.
 
-**4. Internal contract enforcement.** The normalized `VinDecodeResult` struct is the only thing downstream consumers ever see. Required fields are validated before the response is returned; missing or malformed vendor data is flagged with a structured error rather than silently passed through.
+**4. Generation with quality gating.** The ranked chunks are assembled into a context window and passed to the LLM with a prompt that instructs it to answer only from the provided context and to indicate when the context is insufficient. The response includes citations (document title + page number) for each claim. If no chunks pass the relevance threshold, the service returns a "insufficient context" response rather than attempting generation.
 
 ## Key Decisions
 
-**One internal contract, not one-per-vendor.** The temptation when integrating multiple data sources is to expose a union of all their fields. We avoided that. The internal contract contains only fields with clear ownership and consumer demand. Vendor-specific fields that don't map cleanly are dropped or placed in an `extended` namespace that consumers explicitly opt into.
+**Semantic chunking over fixed-size chunking.** Fixed-size chunking is simpler to implement, but it frequently splits concepts across chunk boundaries in ways that hurt retrieval — a chunk ending mid-sentence doesn't embed well, and a retriever won't find it when the query uses complete phrasing. Semantic chunking is slower at ingestion time but produces meaningfully better retrieval precision.
 
-**Fallback, not aggregation.** We considered aggregating across vendors to fill in gaps, but the complexity wasn't worth it for the data quality improvement. A single authoritative source with a ranked fallback chain was simpler to reason about, simpler to test, and simpler to debug when a vendor had data quality issues.
+**FAISS with a cross-encoder reranker.** The two-stage retrieval pattern (fast bi-encoder for recall, slower cross-encoder for precision) is a well-known approach, and it works. The bi-encoder retrieves candidates in milliseconds even at scale; the cross-encoder reranker adds latency but substantially improves the quality of what gets passed to the LLM. The relevance threshold at the reranking stage is the main lever for controlling the false-positive rate.
 
-**Redis TTL strategy.** Vehicle specifications don't change, but recall data and title status can. We used long TTLs for immutable spec fields and shorter TTLs for fields that can evolve post-manufacture. This kept the cache useful while keeping stale data risk bounded.
+**Quality gating as a first-class feature.** Most RAG tutorials treat quality gating as an afterthought. It shouldn't be. An LLM that says "I don't have enough context to answer this" is more useful than one that confidently makes something up. The threshold calibration took iteration — too aggressive and the system refuses to answer questions it could handle; too permissive and irrelevant chunks make it through.
 
 ## Results
 
-- **p95 latency reduced from 420ms → 260ms** through PostgreSQL query optimization and caching
-- **~85% cache hit rate** in steady state, substantially reducing vendor API spend
-- **Single internal contract** adopted by all downstream consumers — no more per-consumer vendor handling
-- **97% test coverage** across the service, with integration tests covering all vendor adapters and fallback paths
-- **45% reduction in production regressions** after the coverage push, measured over the following quarter
+- **40% reduction in irrelevant responses** versus a baseline system with no retrieval quality gating
+- Sub-second end-to-end latency for queries over document collections up to ~10K pages
+- Grounded responses with source citations for every claim, enabling users to verify answers
+- Dockerized service deployable as a standalone API, with persistent FAISS index across restarts
 
 ## What I'd Do Differently
 
-The fallback chain ordering was configured in code initially, which meant changing vendor priority required a deploy. I moved it to configuration-driven settings later, but it should have been there from the start — it's exactly the kind of thing that changes based on vendor performance and contract terms, not engineering decisions.
+The chunking strategy was tuned manually by eyeballing retrieval quality on a test set. A more rigorous evaluation framework — with labeled query/answer pairs and automated retrieval metrics (MRR, nDCG) — would have made it easier to compare chunking strategies and threshold settings systematically.
 
-I'd also invest earlier in synthetic monitoring against real vendor endpoints. Our unit tests mocked vendor responses, which was fast but caught a category of vendor-side schema drift bugs late. A small suite of scheduled integration tests against staging credentials would have caught those earlier.
+FAISS works well but doesn't support filtering by document metadata at retrieval time (e.g., "search only within documents from this year"). For a production multi-tenant system, I'd use a vector database that supports metadata filtering natively — Qdrant or Weaviate — rather than implementing post-retrieval filtering in application code.

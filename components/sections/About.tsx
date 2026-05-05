@@ -7,23 +7,31 @@ import { SkillGroup } from "@/lib/types";
 const SKILLS: SkillGroup[] = [
   {
     category: "Languages",
-    items: ["C#", "Java", "Python", "SQL", "TypeScript"],
+    items: ["C#", "Java", "Python", "Go", "SQL", "TypeScript"],
   },
   {
     category: "Backend",
-    items: ["ASP.NET Core", "Spring Boot", "REST APIs", "Microservices", "Event-driven Architecture"],
+    items: ["ASP.NET Core", "Spring Boot", "gRPC", "REST APIs", "Microservices", "Distributed Systems"],
   },
   {
-    category: "Messaging & Data",
-    items: ["Apache Pulsar", "Kafka", "RabbitMQ", "Redis", "PostgreSQL", "OpenSearch"],
+    category: "Streaming & Messaging",
+    items: ["Apache Pulsar", "Kafka", "Flink", "RabbitMQ", "Event-driven Architecture"],
+  },
+  {
+    category: "ML & AI",
+    items: ["PyTorch", "TensorFlow", "SageMaker", "FAISS", "RAG Pipelines"],
+  },
+  {
+    category: "Databases & Caching",
+    items: ["PostgreSQL", "Redis", "MongoDB", "SQL Server", "OpenSearch"],
   },
   {
     category: "Cloud & DevOps",
-    items: ["Azure", "AWS", "Docker", "Kubernetes", "Terraform", "GitHub Actions"],
+    items: ["AWS", "Azure", "Docker", "Kubernetes", "Terraform", "GitHub Actions"],
   },
   {
     category: "Observability",
-    items: ["Honeycomb", "Datadog", "Grafana", "Splunk"],
+    items: ["Honeycomb", "Datadog", "Grafana", "Prometheus", "OpenTelemetry", "Splunk"],
   },
 ];
 
@@ -58,34 +66,36 @@ export function About() {
             className="md:col-span-3 space-y-5 text-muted leading-relaxed"
           >
             <p>
-              I&apos;m a software engineer focused on backend systems and
-              distributed infrastructure &mdash; the layer where correctness,
-              throughput, and cost all matter at the same time. My work lives at
-              the intersection of event-driven architecture, API design, and the
-              storage and messaging systems behind them.
+              I&apos;m a software engineer with 4+ years of experience building
+              distributed backend services, event-driven workflows, real-time
+              streaming systems, and ML-assisted decision pipelines. My work
+              spans the full production stack — from event propagation and state
+              management to caching layers, streaming infrastructure, and the
+              observability tooling that keeps it all running.
             </p>
             <p>
-              I currently work at Openlane as a Software Engineer II, where I own
-              a .NET Core backend service orchestrating vehicle inspection
-              workflows for 100K+ vehicles/day. I&apos;ve designed Apache
-              Pulsar-based event pipelines that cut processing latency by 35%,
-              led production rollout strategies using feature flags and canaries,
-              and built Honeycomb observability tooling that reduced incident MTTD
-              by 45%. Earlier in the same company, I built the VIN decoding
-              microservice and cut p95 latency from 420ms to 260ms through
-              PostgreSQL query optimization.
+              I currently work at Openlane, where I own core .NET Core services
+              in a distributed inspection workflow platform processing 300K+
+              daily vehicle inspections and 3.5M+ events/day. I&apos;ve designed
+              Apache Pulsar-based event systems with replay-safe consumers, built
+              ML-assisted decision pipelines that generate risk scores for rule
+              engines and review queues, and led production rollouts using
+              Terraform-managed canary deployments that reduced MTTD by 45%.
             </p>
             <p>
-              Before Openlane, I interned at MagicLeap, where I designed a
-              distributed deduplication system that cut Docker image redundancy by
-              50% and built the observability stack for 170+ concurrent
-              distributed builds.
+              Before Openlane, I interned at Mayo Clinic as a Research Software
+              Engineer, building multi-view CNN training pipelines in PyTorch for
+              medical imaging — raising model accuracy from 87% to 95% and
+              cutting false-negative rate in half. Earlier at Infosys, I built a
+              real-time DDoS detection pipeline on Kafka and Flink that ingested
+              2M+ network flow records per second and cut detect-to-mitigate
+              latency from 25s to under 8s.
             </p>
             <p>
-              I care about boring, well-instrumented systems. Observability before
-              optimization. Idempotency before clever retry logic. The systems
-              I&apos;m proudest of are the ones that don&apos;t page anyone at
-              3 a.m.
+              I care about boring, well-instrumented systems. Observability
+              before optimization. Idempotency before clever retry logic. The
+              systems I&apos;m proudest of are the ones that don&apos;t page
+              anyone at 3&nbsp;a.m.
             </p>
           </motion.div>
 

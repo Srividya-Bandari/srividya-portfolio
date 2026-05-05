@@ -1,51 +1,52 @@
 ---
 title: "Vehicle Inspection Workflow Platform"
-tagline: "End-to-end .NET Core service orchestrating 100K+ vehicle inspections per day at Openlane"
-tech: [".NET Core", "Apache Pulsar", "Redis", "Terraform", "Honeycomb"]
-description: "Mission-critical backend service handling end-to-end vehicle inspection workflows for Openlane's marketplace, processing 100K+ vehicles/day with event-driven async processing and a Terraform-managed rollout strategy."
+tagline: "Distributed .NET Core platform processing 300K+ daily inspections and 3.5M+ events/day at Openlane"
+tech: [".NET Core", "Apache Pulsar", "Redis", "PostgreSQL", "Terraform", "Honeycomb"]
+description: "Core backend service for Openlane's vehicle inspection platform — event-driven, ML-assisted, and observable by design. Handles 300K+ daily vehicle inspections across inspection, inventory, VIN intelligence, and downstream systems."
 github: "#"
 featured: true
-date: "2025-08-01"
+date: "2025-01-01"
 ---
 
 ## The Problem
 
-Openlane runs one of the largest automotive remarketing platforms in North America. Every vehicle that moves through the marketplace — sold at auction, offered for purchase, listed for inspection — goes through a workflow system that tracks its state from intake to completion.
+Openlane runs one of the largest automotive remarketing platforms in North America. Every vehicle moving through the marketplace — listed for inspection, validated, routed for auction — is tracked by a workflow system that coordinates state across inspection, inventory, VIN intelligence, and a constellation of downstream services.
 
-By the time I inherited ownership of the inspection workflow service, it was handling 100K+ vehicles a day and showing the usual signs of a system that had grown faster than its architecture: processing was synchronous in places that needed to be async, state transitions had edge cases that surfaced only under load, and the deployment process was manual enough that rolling back a bad deploy was a stressful half-hour event rather than a five-minute one.
+By the time I took ownership of core services in this platform, the numbers had grown to a point where the system's weak spots were visible: 300K+ vehicle inspections a day, 3.5M+ events flowing through validation, integration, audit, and observability pipelines. Synchronous processing steps that were fine at lower volume were now contention points. Event consumers weren't replay-safe. The deployment process involved too much manual coordination for a system this critical.
 
-The mandate was to make the system reliable enough to run unattended — high throughput, fault-tolerant, and observable enough that problems were caught before customers noticed them.
+The job was to make the platform reliable, observable, and deployable without ceremony — and to add ML-assisted signal to inspection decisions that had previously been purely rule-based.
 
 ## Architecture
 
-The service is a .NET Core application built around a few key ideas:
+The system is a set of .NET Core services communicating over Apache Pulsar. The design rests on a few principles that shaped everything else.
 
-**Event-driven async processing.** The most impactful change was pulling synchronous processing out of the critical path. Inspection steps that could be deferred — third-party data enrichment, notification dispatch, downstream system sync — were moved onto Apache Pulsar topics with dedicated consumer groups. This decoupled processing latency from API response time and gave us independent scaling and retry semantics for each step.
+**Event propagation with replay safety.** Every event carries a correlation ID, a schema-versioned payload, and enough metadata to replay it correctly if a consumer restarts mid-processing. Consumers checkpoint progress explicitly rather than relying on offset auto-commit. Failure-isolated retry paths mean one broken consumer doesn't block the others.
 
-**Feature-flagged rollout via Terraform.** Production deployments now follow a canary pattern managed through Terraform-driven configuration. New logic ships behind a flag, gets routed to a configurable percentage of traffic, and promotes automatically when error rates and latency stay within bounds — or rolls back if they don't. On-call engineers no longer need to be present for every deploy.
+**ML-assisted decision pipelines.** The most interesting addition was bringing ML signal into inspection decisions. Workflow events are enriched with VIN intelligence (vehicle specs, recall history, known defect patterns), historical state-transition data, and real-time inspection signals. An ML model scores each vehicle for anomalous transitions, duplicate processing signals, and inconsistent attributes. High-risk vehicles are routed to manual-review queues; low-risk vehicles proceed through automated paths. This replaced a fragile set of hard-coded rules that required engineering involvement to update.
 
-**Redis caching for VIN decode.** VIN decoding was on the hot path for every vehicle intake, and we were paying vendor API costs per call. Adding a Redis caching layer with appropriate TTLs cut vendor API usage significantly and took VIN decode latency from a meaningful portion of intake time to essentially zero for cache-hit vehicles.
+**Idempotent consumers with failure isolation.** Every consumer is idempotent: events carry deduplication keys, processing is transactional where it needs to be, and the dead-letter handling is explicit. Vendor failures are isolated at the consumer level — a degraded third-party integration doesn't cascade into invalid inspection state transitions.
 
-**Honeycomb observability.** The previous monitoring setup was alert-heavy and low-signal. I rebuilt the observability layer around Honeycomb, instrumenting the workflow funnel with structured events that let us trace a vehicle's lifecycle across services. Funnel dashboards show where vehicles drop out of the workflow. Alert thresholds are set on derived metrics — error rate by workflow stage, P95 per step — not just raw counts.
+**Terraform-managed canary rollouts.** New logic ships behind Terraform-managed feature flags. Traffic is promoted through stages (1% → 10% → 50% → 100%) with Honeycomb-based health checks at each gate. If error rates or latency deviate from baseline during a stage, rollback is automatic.
 
 ## Key Decisions
 
-**Apache Pulsar over Kafka.** The decision was driven by existing infrastructure at Openlane — Pulsar was already the standard messaging layer. That said, Pulsar's multi-tenancy model and built-in tiered storage have been genuinely useful: we can namespace topics by workflow type and retain historical event streams without managing separate infrastructure.
+**Apache Pulsar over Kafka.** Pulsar was already Openlane's standard messaging layer, which made the choice straightforward operationally. That said, Pulsar's multi-tenancy model and built-in tiered storage are genuinely useful at this scale: topics can be namespaced by workflow domain, and event history is retained without managing separate archival infrastructure.
 
-**Canary deploys are non-negotiable at this scale.** At 100K+ vehicles/day, a bad deploy that affects 1% of traffic is still 1,000 vehicles per day. The Terraform-managed canary pattern was the right call. It added some upfront complexity to the deployment pipeline, but it's paid for itself many times over in avoided incidents.
+**ML for anomaly detection, not classification.** The ML layer doesn't try to approve or reject inspections — it generates risk scores that feed rule engines and review queues. Keeping humans in the loop for high-risk decisions made the system easier to audit, easier to tune, and easier to get organizational buy-in for.
 
-**Instrument everything, alert on what matters.** Early in the project the alerting was noisy — too many alerts firing on raw counts that didn't distinguish between a real problem and a temporary upstream blip. Rebuilding around derived metrics (error rate, not error count; P95 per stage, not global P95) cut alert fatigue significantly and made the alerts that did fire more actionable.
+**Idempotency as a first-class constraint.** At 3.5M events/day, the question isn't whether duplicates will happen — Pulsar redelivers, consumers crash, deploys reprocess. The question is whether your system handles them correctly. Every consumer was designed idempotent from the start, not retrofitted.
 
 ## Results
 
-- **100K+ vehicles/day** processed reliably in steady state with no SLA breaches during my ownership period
-- **35% reduction in inspection processing latency** after moving synchronous steps to Pulsar-backed async processing
-- **98% SLA maintained** across on-call rotations since the canary rollout strategy was adopted
-- **70% improvement in VIN decode response time** and meaningful reduction in third-party vendor costs via Redis caching
-- **45% reduction in MTTD** after rebuilding observability around Honeycomb funnel metrics and structured events
+- **300K+ daily vehicle inspections** processed reliably with no SLA misses
+- **3.5M+ events/day** flowing through validation, integration, audit, and observability pipelines
+- **35% reduction in workflow latency** after moving synchronous steps to Pulsar-backed async processing
+- **70% improvement in VIN decode p95** via Redis caching with TTL-based invalidation and request coalescing
+- **45% reduction in MTTD** after rebuilding observability around Honeycomb distributed tracing and structured events
+- ML-assisted risk scoring routed anomalous vehicles to review queues, replacing a brittle set of hand-maintained rules
 
 ## What I'd Do Differently
 
-The Pulsar consumer group topology grew organically, which meant some topics ended up with more partitions than they needed and others had too few for the throughput we were pushing through them. I'd design the topic partitioning strategy upfront based on projected load rather than adjusting it reactively.
+The ML feature pipeline was built incrementally, which meant the feature engineering logic ended up scattered across multiple services. A centralized feature store — even a lightweight one — would have made it easier to add new signals and to reproduce training data for model retraining.
 
-On the observability side: I'd instrument the service from day one with the exact same Honeycomb event schema we ended up with, rather than retrofitting it. Retrofit instrumentation always leaves gaps — steps that weren't worth adding later, fields that required code changes to surface — and those gaps are exactly where the next incident hides.
+On the Pulsar topology: I'd design the partition count and consumer group structure upfront based on projected throughput. We ended up resizing partitions reactively, which required coordination across teams and a maintenance window.

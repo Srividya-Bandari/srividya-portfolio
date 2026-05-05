@@ -38,7 +38,7 @@ export function Contact() {
           className="flex flex-col sm:flex-row gap-3 justify-center"
         >
           <Link
-            href="mailto:srividyabandari98@gmail.com"
+            href="mailto:srividya.bandari.swe@gmail.com"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md bg-accent text-white font-medium hover:opacity-90 transition-opacity"
           >
             <Mail size={16} />

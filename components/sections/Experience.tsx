@@ -6,39 +6,40 @@ import { ExperienceEntry } from "@/lib/types";
 const EXPERIENCE: ExperienceEntry[] = [
   {
     company: "Openlane",
-    role: "Software Engineer II",
-    period: "Aug 2025 – Present",
-    location: "Austin, TX",
-    bullets: [
-      "Owned and scaled a critical .NET Core backend service orchestrating end-to-end vehicle inspection workflows, reliably supporting 100K+ vehicles/day with high throughput and fault tolerance",
-      "Designed event-driven async processing using Apache Pulsar, reducing inspection processing latency by 35% and improving real-time workflow state propagation",
-      "Led production readiness + rollout strategy (feature flags, canaries) via Terraform-driven configuration, minimizing deployment risk and sustaining 98% SLA in on-call rotations",
-      "Reduced VIN decode latency and vendor cost by introducing Redis caching, improving response times by 70% and cutting third-party API usage",
-      "Built Honeycomb dashboards + alerts for funnel health and error trends, reducing MTTD by 45% and improving incident triage",
-    ],
-  },
-  {
-    company: "Openlane",
     role: "Software Engineer",
-    period: "July 2023 – Aug 2025",
+    period: "July 2023 – Present",
     location: "Austin, TX",
     bullets: [
-      "Delivered backend features in ASP.NET Core across multi-organization inspection workflows ensuring tenant correctness",
-      "Wrote 1,000+ unit and integration tests, increasing coverage to 97% and reducing production regressions by 45%",
-      "Built a Java Spring Boot VIN decoding microservice that normalized external vendor data into a consistent internal contract for multiple downstream consumers",
-      "Improved system reliability by fixing workflow edge cases — state transitions, retries, validation paths — discovered through production debugging and test gaps",
-      "Reduced p95 latency from 420ms → 260ms by optimizing PostgreSQL hot queries (indexing + query refactors)",
+      "Owned core services in a distributed .NET Core inspection workflow platform processing 300K+ daily vehicle inspections and 3.5M+ validation, integration, audit, and observability events/day across inspection, inventory, VIN intelligence, and downstream systems.",
+      "Designed Apache Pulsar-based event propagation with replay-safe consumers, correlation IDs, schema-versioned payloads, and failure-isolated retry paths, reducing workflow latency by 35% while improving real-time state consistency.",
+      "Built ML-assisted inspection decision pipelines by enriching workflow events with VIN intelligence, vehicle metadata, inspection signals, and historical state-transition features, generating risk scores used by rule engines and manual-review queues to detect anomalous transitions, duplicate processing signals, and inconsistent vehicle attributes.",
+      "Implemented idempotent event consumers with deduplication keys, exponential backoff, dead-letter handling, and vendor-failure isolation, reducing duplicate processing risk and preventing invalid inspection state transitions during downstream degradation.",
+      "Optimized high-volume VIN decoding and reference-data lookups using Redis-backed caching, TTL-based invalidation, and request coalescing, improving p95 latency by 70% while reducing repeated third-party vendor calls.",
+      "Led production rollout with Terraform-managed feature flags, staged enablement, canary deployments, rollback paths, and Honeycomb distributed tracing, reducing MTTD by 45% and improving release safety across critical inspection workflows.",
     ],
   },
   {
-    company: "MagicLeap",
-    role: "Software Engineer Intern & Co-op",
-    period: "May 2022 – Dec 2022",
+    company: "Mayo Clinic",
+    role: "Research Software Engineer Intern",
+    period: "Jan 2022 – July 2022",
     location: "Phoenix, AZ",
     bullets: [
-      "Designed and implemented a distributed deduplication system using SHA-based hashing and Redis caching, reducing Docker image redundancy by 50% across CI/CD environments",
-      "Scaled observability infrastructure by integrating RabbitMQ, Logstash, and OpenSearch, enabling real-time metric visualization and log processing for 170+ concurrent distributed builds",
-      "Optimized the Lead Verifier system for 150+ repositories, utilizing intelligent build-triggering logic to save 1,000+ hours of monthly compute time",
+      "Designed a modular multi-view CNN training and inference pipeline in PyTorch, fusing image embeddings with structured metadata features to support reproducible model development across medical-imaging datasets.",
+      "Improved model performance through class-imbalance handling, loss-function tuning, threshold calibration, and 1K+ hard-case error analysis, raising accuracy from 87% to 95% while reducing false-negative rate from 13% to 5%.",
+      "Added PyTorch hooks, tensor-level tracing, and Datadog dashboards for feature extraction, inference latency, and failure diagnostics, reducing MTTR from 2 days to 4 hours and increasing trace-event coverage from 40% to 100%.",
+    ],
+  },
+  {
+    company: "Infosys",
+    role: "Software Engineer",
+    period: "Jan 2020 – Aug 2021",
+    location: "Hyderabad, India",
+    bullets: [
+      "Built a real-time DDoS detection pipeline using Kafka, stateful Flink, and Java on Kubernetes, ingesting 2M+ network flow records/sec and cutting detect-to-mitigate latency from 25s to under 8s.",
+      "Implemented a Go/Java mitigation orchestration service over gRPC to push staged BGP Flowspec, RTBH, and ACL actions with audit logging, operator approval, and rollback safeguards, automating 90%+ of approved mitigations.",
+      "Developed adaptive baselining and heavy-hitter detection with Count-Min Sketch, EWMA, RocksDB-backed Flink state, and Redis caching, reducing compute and memory footprint by 40% with no loss in precision or recall.",
+      "Drove observability and reliability with Prometheus, Grafana, OpenTelemetry, Splunk, SLO dashboards, and chaos drills, achieving 99.97% availability and reducing mean time to mitigation from 11s to 5s.",
+      "Implemented secure multi-tenant rollout workflows on AWS using EKS, S3, CloudWatch, IAM, KMS, Terraform, Argo Rollouts, and feature flags, enabling tenant-level isolation, staged releases, and safer rollback across client environments.",
     ],
   },
 ];
@@ -92,7 +93,7 @@ export function Experience() {
                 <ul className="space-y-2 text-muted leading-relaxed">
                   {entry.bullets.map((b, i) => (
                     <li key={i} className="flex gap-3">
-                      <span className="text-accent mt-1.5 select-none">
+                      <span className="text-accent mt-1.5 select-none shrink-0">
                         &bull;
                       </span>
                       <span>{b}</span>

@@ -102,7 +102,7 @@ export function Hero() {
               <Linkedin size={20} />
             </Link>
             <Link
-              href="mailto:srividyabandari98@gmail.com"
+              href="mailto:srividya.bandari.swe@gmail.com"
               aria-label="Email"
               className="text-muted hover:text-accent transition-colors"
             >
