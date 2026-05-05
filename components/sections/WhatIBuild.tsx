@@ -35,8 +35,8 @@ const PILLARS = [
       "Backend infrastructure for LLM-powered products — retrieval pipelines, API wrappers, evaluation loops, and the boring glue that makes them reliable.",
     points: [
       "RAG pipelines & vector search",
-      "LLM API integration & prompt management",
-      "Evaluation & quality tooling",
+      "ML-assisted decision pipelines",
+      "Retrieval quality & evaluation tooling",
       "Developer-facing internal APIs",
     ],
   },

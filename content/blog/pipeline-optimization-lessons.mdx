@@ -1,98 +1,51 @@
 ---
-title: "Pipeline Optimization: From 800ms to 120ms"
+title: "How We Cut VIN Decode p95 Latency by 70%"
 date: "2024-02-01"
 readingTime: "6 min read"
 tags: ["Performance", "Backend", "Caching"]
-excerpt: "A step-by-step breakdown of how we traced a latency problem to its real root cause and cut p99 response time by 85%."
+excerpt: "A step-by-step breakdown of how we traced a latency problem to its real root cause and fixed it with layered Redis caching — without touching the database."
 ---
 
-This is the story of how we cut the p99 latency on our internal VIN decoding API from 800ms to 120ms, and what I learned about latency work in the process.
+At Openlane, VIN decoding sits on the hot path of every vehicle intake. Every inspection, every inventory record, every workflow event that involves a vehicle starts with a VIN decode. When that path is slow, everything downstream feels it.
 
-## The Context
+Our p95 was sitting at a number that made the team uncomfortable. The instinct — as it almost always is — was to look at the database first. That instinct was wrong. Here's what actually happened.
 
-The VIN API was, on paper, fine. p50 was 220ms. Most consumers were happy. But the p99 was sitting at 800ms and complaints were coming from the teams whose UX depended on tail latency &mdash; specifically, the inventory team whose page rendered VIN-decoded data inline and whose page-load metrics were getting hammered.
+## Start with measurement, not guesses
 
-The first thing I did was the wrong thing: I started suggesting fixes.
+Before touching anything, I instrumented the decode path to emit timing spans for every external call: the Redis cache check, the vendor API call, and the Postgres reference-data lookup. I let it run for 24 hours and looked at the breakdown for the slow requests.
 
-"Probably the database, let's add an index."
-"Maybe Postgres connection pooling is exhausted."
-"Could be GC pressure."
+The result was clarifying. For a slow decode request:
 
-None of these were measurements. They were guesses. To my credit I caught myself before doing any of them, but only because someone on my team asked the right question.
+- Redis check: ~2ms (cache miss)
+- Vendor API call: the vast majority of elapsed time
+- Postgres: fast, never the bottleneck
 
-## Step 1: Establish a Baseline
+The database was fine. It had been fine the whole time. The bottleneck was that on cache misses, we were making a synchronous call to an external vendor API — and inheriting that vendor's tail latency directly into our p95.
 
-Before changing anything, I needed a baseline. Not just an average. Averages hide everything interesting in latency work. The shape of a latency distribution matters more than its center.
+This is the part I want to emphasize: **two weeks of index optimization on Postgres would have moved our p95 by zero milliseconds.** The discipline of measuring before doing is the difference between useful work and confident motion in the wrong direction.
 
-I instrumented the API to emit p50, p95, and p99 percentiles every 30 seconds, broken down by endpoint and by hour-of-day. The picture that emerged was useful:
+## The fix: layered caching with intentional TTLs
 
-- p50 was healthy. The bulk of requests were fast.
-- p95 was elevated but acceptable.
-- p99 was a wall &mdash; not a long tail, but a step function. There was a population of requests that consistently took 600-900ms, and they were not random.
+Vehicle specification data is largely immutable. A VIN decoded today returns the same make, model, trim, and engine configuration it returned six months ago. That property makes it an ideal caching target — the main design question is TTL strategy, not cache invalidation complexity.
 
-That second observation reframed the problem. This wasn't "things are slow." This was "a specific class of requests is slow." That's a much more tractable problem.
+I designed two cache tiers:
 
-## Step 2: Profile
+**Redis with TTL-based invalidation.** The primary cache layer. VIN decode results are stored keyed by VIN. TTLs are differentiated by data type: core spec fields (make, model, year, trim) get long TTLs since they never change post-manufacture; reference data that can update (recall status, title flags) gets shorter TTLs. This keeps the cache useful while bounding stale-data risk.
 
-I expected the database to be the bottleneck. That was the team consensus and it was the natural assumption &mdash; databases are usually the slow thing.
+**Request coalescing for concurrent misses.** Under load, the same VIN can arrive in multiple concurrent requests before the first one populates the cache. Without coalescing, each of those requests makes a separate vendor call. With it, the first request owns the vendor call and the rest wait on its result. This flattened the spike behavior we saw during batch intake events.
 
-I added timing spans around every external call: Postgres, Redis, NHTSA, manufacturer APIs. I logged the breakdown for the next 24 hours of slow requests.
+## Rolling it out one change at a time
 
-The actual breakdown for a 750ms request:
+I deployed each layer independently and measured between each step. Stacking changes and then measuring is how you end up arguing about which change actually helped.
 
-- Postgres: 18ms
-- Redis: 4ms
-- NHTSA API: 680ms
-- Manufacturer API: timed out and fell back to NHTSA, adding another 50ms
+- Redis caching alone: large p95 improvement from eliminating most vendor calls
+- Adding request coalescing: further reduction, primarily visible during peak batch intake
+- Tuning TTLs based on observed hit-rate data: incremental gains
 
-Postgres was not the bottleneck. Postgres was *fast*. The problem was that on cache misses, we were synchronously calling NHTSA, and NHTSA's p99 was *itself* 700ms. We were inheriting their entire latency distribution at exactly the moments we cared about most.
+End result: **p95 improved by 70%**, vendor API call volume dropped substantially, and the decode path stopped being the thing that showed up in every latency conversation.
 
-This is why measurement matters. A two-week index optimization on Postgres would not have moved p99 by even one millisecond.
+## The broader lesson
 
-## Step 3: Design the Caching Layers
+Every latency problem I've worked on has followed the same shape: the team has a consensus about where the bottleneck is, the consensus is wrong, and measurement reveals something more specific and more fixable than the assumed root cause.
 
-With the actual bottleneck identified, the design became clear. We needed to make sure the slow path (cache miss into NHTSA) was hit as rarely as possible.
-
-I designed two cache tiers.
-
-**L1 in-memory LRU.** Per-instance, ~10K entries. Sub-millisecond access. The motivation was the batch endpoint &mdash; teams sending 100 VINs in a single request shouldn't be paying for 100 Redis round-trips.
-
-**L2 Redis.** Shared across instances, much larger capacity, TTLs tiered by data source. NHTSA decodes are effectively immutable, so a 7-day TTL is conservative. Manufacturer data is more volatile, so 30 days. Internal DB hits, 90 days.
-
-I also added a weekly cache-warming job that pre-populates the top 10K VINs from the prior week's traffic. This was specifically for Monday mornings, when the cache was cold and the traffic spike was real.
-
-The change I almost made and didn't: a CDN. Latency improvement at the edge wouldn't have helped, because our consumers are internal services, not browsers. The bottleneck was upstream, not on the wire.
-
-## Step 4: Implement and Measure After Each Change
-
-I rolled out one change at a time and measured between each. This is the tedious part, and it's the part that engineers most often skip.
-
-- Adding L1 alone: p99 down to 480ms. (The batch endpoint moved a lot.)
-- Adding L2 (Redis) on top: p99 down to 220ms.
-- Adding the weekly warm-up: p99 down to 140ms.
-- Increasing L1 size after measuring its hit rate: p99 down to 120ms.
-
-Each change had a measurable effect. If a change had *not* moved the metric, I'd want to know why before continuing &mdash; that's a sign that my model of the system is wrong.
-
-## Step 5: The Final Numbers
-
-After six weeks of work:
-
-- p50: 220ms &rarr; 25ms
-- p95: 480ms &rarr; 60ms
-- p99: 800ms &rarr; 120ms
-- Upstream API call volume: down 78%
-
-The upstream cost reduction was a nice side effect. The win we cared about was the p99.
-
-## Lessons
-
-**Measure first. Always.** Two weeks of "obvious" optimization on the wrong subsystem would have produced zero improvement and a more brittle codebase.
-
-**The shape of latency matters more than the average.** "p99 is 800ms" is the actionable framing. "Average response time is 280ms" is the framing that hides every interesting bug.
-
-**Cache invalidation has to be designed up front, not retrofitted.** Every TTL I added was tied to a documented assumption about the data's freshness. Every layer had a written answer to "what happens when this becomes stale?" That documentation has paid for itself many times over since.
-
-**One change at a time, always with a measurement between.** Stacking three changes and then measuring is how you end up arguing for six months about which one actually helped.
-
-The bigger lesson, the one I keep coming back to: most performance problems are not what you think they are. The discipline of measuring before doing is the difference between two weeks of useful work and two weeks of confident motion in the wrong direction.
+Profile first. Form hypotheses after the data, not before. And when you find the real problem, fix it one change at a time — because that's the only way to know which change actually worked.

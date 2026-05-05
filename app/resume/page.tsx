@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Github, Linkedin, Mail, MapPin, Phone } from "lucide-react";
+import { Globe, Github, Linkedin, Mail, MapPin, Phone } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { ResumeDownloadModal } from "@/components/ui/ResumeDownloadModal";
 
@@ -150,6 +150,15 @@ export default function ResumePage() {
             >
               <Github size={13} />
               github.com/Srividya-Bandari
+            </Link>
+            <Link
+              href="https://srividyabandari.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 hover:text-accent transition-colors"
+            >
+              <Globe size={13} />
+              srividyabandari.com
             </Link>
           </div>
         </header>
