@@ -1,9 +1,9 @@
 ---
 title: "RAG-Powered Document Q&A System"
-tagline: "FastAPI service for PDF ingestion, semantic retrieval, and grounded Q&A with 40% fewer irrelevant responses"
-tech: ["Python", "FastAPI", "FAISS", "Docker", "Vector Search"]
-description: "FastAPI-based retrieval-augmented generation service that ingests PDFs, semantically chunks and indexes them in FAISS, retrieves context-ranked passages, and returns grounded answers — with retrieval-quality checks that cut irrelevant responses by 40%."
-github: "#"
+tagline: "End-to-end RAG app with a React frontend and FastAPI backend — PDF upload, semantic search, and grounded Q&A with 40% fewer irrelevant responses"
+tech: ["React", "Python", "FastAPI", "FAISS", "Docker", "Vector Search"]
+description: "End-to-end retrieval-augmented generation application with a React frontend and FastAPI backend that ingests PDFs, semantically chunks and indexes them in FAISS, retrieves context-ranked passages, and returns grounded answers — with retrieval-quality checks that cut irrelevant responses by 40%."
+github: "https://github.com/Srividya-Bandari/rag-doc-qa"
 featured: true
 date: "2024-09-01"
 ---
@@ -12,11 +12,11 @@ date: "2024-09-01"
 
 Retrieval-Augmented Generation (RAG) as a pattern is straightforward on paper: index your documents, retrieve relevant chunks at query time, feed them to an LLM as context. In practice, the hard part is retrieval quality — specifically, the cases where your retriever returns chunks that are semantically adjacent to the query but don't actually contain the information needed to answer it. When those chunks get passed to the LLM as context, you get confident-sounding answers that are either partially wrong or entirely fabricated.
 
-The project goal was to build a production-grade RAG service for PDF documents with two hard requirements: grounded answers (the system should cite the source passages it used) and quality gating (if retrieval confidence is too low, the system should say so rather than hallucinate).
+The project goal was to build an end-to-end RAG application for PDF documents — a React frontend for uploading documents and asking questions, backed by a FastAPI service — with two hard requirements: grounded answers (the system should cite the source passages it used) and quality gating (if retrieval confidence is too low, the system should say so rather than hallucinate).
 
 ## Architecture
 
-The service is built as a FastAPI application with four main stages.
+The frontend is a React app for uploading PDFs, asking questions, and viewing answers alongside their source passages. The backend is a FastAPI application with four main stages.
 
 **1. Ingestion and chunking.** PDFs are uploaded via a REST endpoint. The service extracts text, then applies semantic chunking: rather than splitting on fixed token counts, chunks are split at natural boundaries (section headings, paragraph breaks) and merged or split further to stay within a target token budget. Metadata — document title, page number, section heading — is preserved with each chunk.
 

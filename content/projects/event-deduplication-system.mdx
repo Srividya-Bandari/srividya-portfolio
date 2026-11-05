@@ -1,7 +1,7 @@
 ---
 title: "Vehicle Inspection Workflow Platform"
 tagline: "Distributed .NET Core platform processing 300K+ daily inspections and 3.5M+ events/day at Openlane"
-tech: [".NET Core", "Apache Pulsar", "Redis", "PostgreSQL", "Terraform", "Honeycomb"]
+tech: ["C#", ".NET Core", "Azure", "Apache Pulsar", "Redis", "PostgreSQL", "Terraform", "Honeycomb"]
 description: "Core backend service for Openlane's vehicle inspection platform — event-driven, ML-assisted, and observable by design. Handles 300K+ daily vehicle inspections across inspection, inventory, VIN intelligence, and downstream systems."
 github: "#"
 featured: true
@@ -18,7 +18,7 @@ The job was to make the platform reliable, observable, and deployable without ce
 
 ## Architecture
 
-The system is a set of .NET Core services communicating over Apache Pulsar. The design rests on a few principles that shaped everything else.
+The system is a set of C#/.NET Core services running on Azure and communicating over Apache Pulsar. The design rests on a few principles that shaped everything else.
 
 **Event propagation with replay safety.** Every event carries a correlation ID, a schema-versioned payload, and enough metadata to replay it correctly if a consumer restarts mid-processing. Consumers checkpoint progress explicitly rather than relying on offset auto-commit. Failure-isolated retry paths mean one broken consumer doesn't block the others.
 
@@ -26,7 +26,7 @@ The system is a set of .NET Core services communicating over Apache Pulsar. The 
 
 **Idempotent consumers with failure isolation.** Every consumer is idempotent: events carry deduplication keys, processing is transactional where it needs to be, and the dead-letter handling is explicit. Vendor failures are isolated at the consumer level — a degraded third-party integration doesn't cascade into invalid inspection state transitions.
 
-**Terraform-managed canary rollouts.** New logic ships behind Terraform-managed feature flags. Traffic is promoted through stages (1% → 10% → 50% → 100%) with Honeycomb-based health checks at each gate. If error rates or latency deviate from baseline during a stage, rollback is automatic.
+**Terraform-managed canary rollouts.** Infrastructure on Azure is managed with Terraform, and new logic ships through staged enablement. Traffic is promoted through stages (1% → 10% → 50% → 100%) with Honeycomb-based health checks at each gate. If error rates or latency deviate from baseline during a stage, rollback is automatic.
 
 ## Key Decisions
 
@@ -38,11 +38,11 @@ The system is a set of .NET Core services communicating over Apache Pulsar. The 
 
 ## Results
 
-- **300K+ daily vehicle inspections** processed reliably with no SLA misses
+- **300K+ daily vehicle inspections** processed reliably
 - **3.5M+ events/day** flowing through validation, integration, audit, and observability pipelines
 - **35% reduction in workflow latency** after moving synchronous steps to Pulsar-backed async processing
-- **70% improvement in VIN decode p95** via Redis caching with TTL-based invalidation and request coalescing
-- **45% reduction in MTTD** after rebuilding observability around Honeycomb distributed tracing and structured events
+- **70% lower p95 latency** for VIN decoding and reference-data lookups via Redis caching with TTL-based invalidation and request coalescing, with fewer repeated third-party calls
+- **Faster issue detection and safer releases** through canary deployments, rollback mechanisms, and Honeycomb distributed tracing
 - ML-assisted risk scoring routed anomalous vehicles to review queues, replacing a brittle set of hand-maintained rules
 
 ## What I'd Do Differently

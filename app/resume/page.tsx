@@ -14,42 +14,40 @@ const EXPERIENCE = [
   {
     company: "Openlane",
     role: "Software Engineer",
-    period: "July 2023 – Present",
+    period: "Jul 2023 – Present",
     location: "Austin, TX",
-    tech: ".NET Core, Apache Pulsar, Redis, PostgreSQL, Terraform, Honeycomb",
+    tech: "C#, .NET Core, ASP.NET Core, Azure, Apache Pulsar, Redis, PostgreSQL, Terraform",
     bullets: [
-      "Owned core services in a distributed .NET Core inspection workflow platform processing 300K+ daily vehicle inspections and 3.5M+ validation, integration, audit, and observability events/day across inspection, inventory, VIN intelligence, and downstream systems.",
-      "Designed Apache Pulsar-based event propagation with replay-safe consumers, correlation IDs, schema-versioned payloads, and failure-isolated retry paths, reducing workflow latency by 35% while improving real-time state consistency.",
-      "Built ML-assisted inspection decision pipelines by enriching workflow events with VIN intelligence, vehicle metadata, inspection signals, and historical state-transition features, generating risk scores used by rule engines and manual-review queues to detect anomalous transitions, duplicate processing signals, and inconsistent vehicle attributes.",
-      "Implemented idempotent event consumers with deduplication keys, exponential backoff, dead-letter handling, and vendor-failure isolation, reducing duplicate processing risk and preventing invalid inspection state transitions during downstream degradation.",
-      "Optimized high-volume VIN decoding and reference-data lookups using Redis-backed caching, TTL-based invalidation, and request coalescing, improving p95 latency by 70% while reducing repeated third-party vendor calls.",
-      "Led production rollout with Terraform-managed feature flags, staged enablement, canary deployments, rollback paths, and Honeycomb distributed tracing, reducing MTTD by 45% and improving release safety across critical inspection workflows.",
+      "Owned and operated core C#/.NET Core services in a distributed inspection workflow platform processing 300K+ vehicle inspections and 3.5M+ validation, integration, audit, and observability events per day across inspection, inventory, and VIN intelligence systems.",
+      "Designed and shipped Apache Pulsar-based event-driven workflows with replay-safe consumers, correlation IDs, schema-versioned payloads, and failure-isolated retry paths, reducing workflow latency by 35% while improving real-time state consistency.",
+      "Improved distributed-system reliability by implementing idempotent consumers, deduplication keys, exponential backoff, dead-letter handling, and downstream failure isolation, preventing duplicate processing and invalid state transitions during service degradation.",
+      "Optimized high-volume VIN decoding and reference-data lookups using Redis caching, TTL-based invalidation, and request coalescing, reducing p95 latency by 70% and lowering repeated third-party service calls.",
+      "Led production rollout of .NET services on Azure using Terraform-managed infrastructure, staged enablement, canary deployments, rollback mechanisms, and Honeycomb distributed tracing, enabling faster issue detection and safer releases.",
+      "Built ML-assisted inspection decision workflows using VIN intelligence, vehicle metadata, inspection signals, and historical transition features to support anomaly detection, duplicate detection, risk scoring, and manual-review routing.",
     ],
   },
   {
-    company: "Mayo Clinic",
+    company: "Mayo Clinic / ASU",
     role: "Research Software Engineer Intern",
-    period: "Jan 2022 – July 2022",
+    period: "May 2022 – Aug 2022",
     location: "Phoenix, AZ",
     tech: "Python, PyTorch, TensorFlow, Multi-view CNNs, SageMaker, Datadog",
     bullets: [
-      "Designed a modular multi-view CNN training and inference pipeline in PyTorch, fusing image embeddings with structured metadata features to support reproducible model development across medical-imaging datasets.",
-      "Improved model performance through class-imbalance handling, loss-function tuning, threshold calibration, and 1K+ hard-case error analysis, raising accuracy from 87% to 95% while reducing false-negative rate from 13% to 5%.",
-      "Added PyTorch hooks, tensor-level tracing, and Datadog dashboards for feature extraction, inference latency, and failure diagnostics, reducing MTTR from 2 days to 4 hours and increasing trace-event coverage from 40% to 100%.",
+      "Implemented a multi-view CNN combining X-ray images and patient metadata to predict osteoporosis risk, improving model accuracy from 87% to 95% and strengthening identification of high-risk cases.",
+      "Built preprocessing, enrichment, and validation pipelines for clinical imaging and patient data, reducing data-processing errors by 25% before model training and inference.",
+      "Modularized model training, evaluation, and inference components for integration with Mayo Clinic systems, enabling reuse across related clinical prediction workflows.",
     ],
   },
   {
     company: "Infosys",
-    role: "Software Engineer",
-    period: "Jan 2020 – Aug 2021",
+    role: "Software Engineer Intern",
+    period: "Nov 2020 – Jun 2021",
     location: "Hyderabad, India",
-    tech: "Java, Go, Spring Boot, Kafka, Flink, Redis, RocksDB, AWS",
+    tech: "Java, Python, Go, Spring Boot, Kafka, RabbitMQ, Redis, AWS, Docker, Jenkins, OpenSearch",
     bullets: [
-      "Built a real-time DDoS detection pipeline using Kafka, stateful Flink, and Java on Kubernetes, ingesting 2M+ network flow records/sec and cutting detect-to-mitigate latency from 25s to under 8s.",
-      "Implemented a Go/Java mitigation orchestration service over gRPC to push staged BGP Flowspec, RTBH, and ACL actions with audit logging, operator approval, and rollback safeguards, automating 90%+ of approved mitigations.",
-      "Developed adaptive baselining and heavy-hitter detection with Count-Min Sketch, EWMA, RocksDB-backed Flink state, and Redis caching, reducing compute and memory footprint by 40% with no loss in precision or recall.",
-      "Drove observability and reliability with Prometheus, Grafana, OpenTelemetry, Splunk, SLO dashboards, and chaos drills, achieving 99.97% availability and reducing mean time to mitigation from 11s to 5s.",
-      "Implemented secure multi-tenant rollout workflows on AWS using EKS, S3, CloudWatch, IAM, KMS, Terraform, Argo Rollouts, and feature flags, enabling tenant-level isolation, staged releases, and safer rollback across client environments.",
+      "Optimized the Lead Verifier CI across 150+ repositories by implementing SHA-based change detection and Redis-backed Docker image deduplication, reducing redundant builds by 35%, image duplication by 50%, and saving 1,000+ build hours per month.",
+      "Developed Jenkins pipelines and Python automation to synchronize codebases from Qualcomm repositories into client systems and automatically provision compatible repositories.",
+      "Integrated RabbitMQ, Logstash, and OpenSearch to collect, process, and visualize build metrics and logs across infrastructure supporting 170+ concurrent builds.",
     ],
   },
 ];
@@ -57,28 +55,30 @@ const EXPERIENCE = [
 const PROJECTS = [
   {
     title: "RAG-Powered Document Q&A System",
-    tech: ["Python", "FAISS", "FastAPI", "Docker", "Vector Search"],
+    tech: ["React", "Python", "FastAPI", "FAISS", "Docker", "Vector Search"],
     bullets: [
-      "Built a FastAPI-based RAG service for PDF ingestion, semantic chunking, FAISS retrieval, context ranking, and grounded Q&A; added retrieval-quality checks that reduced irrelevant responses by 40% versus baseline generation.",
+      "Built an end-to-end RAG application with a React frontend and FastAPI backend, supporting PDF upload, document indexing, semantic search, and source-grounded responses.",
+      "Implemented PDF ingestion, semantic chunking, FAISS retrieval, context ranking, and grounded Q&A; added retrieval quality checks that reduced irrelevant responses by 40% versus baseline generation.",
     ],
   },
   {
     title: "Multi-Threaded File System Simulator",
-    tech: ["C++", "POSIX APIs", "Read-Write Locks", "Journaling", "Concurrency"],
+    tech: ["C++", "POSIX-Style APIs", "Read-Write Locks", "Concurrency"],
     bullets: [
-      "Built a POSIX-style file system simulator in C++ with concurrent reads/writes, block allocation, inode-style metadata indexing, journaling, and crash recovery; improved throughput by 70% over a single-threaded baseline under contention.",
+      "Built an in-memory POSIX-style file-system simulator in C++ supporting inode-based metadata, block allocation, concurrent file operations, and read-write locking; improved throughput by 70% over a single-threaded baseline while processing 100,000 mixed read/write operations across eight threads.",
     ],
   },
 ];
 
 const SKILLS = [
-  { category: "Languages", items: ["C#", "Java", "Python", "SQL", "Go", "JavaScript", "TypeScript"] },
-  { category: "Backend", items: ["ASP.NET Core/.NET", "Spring Boot", "REST", "gRPC", "Microservices", "Distributed Systems"] },
-  { category: "ML & Data", items: ["PyTorch", "TensorFlow", "SageMaker", "FAISS", "Snowflake"] },
-  { category: "Streaming & Messaging", items: ["Apache Pulsar", "Kafka", "RabbitMQ", "Event-Driven Architecture"] },
-  { category: "Databases & Caching", items: ["PostgreSQL", "SQL Server", "Redis", "MongoDB", "Elasticsearch/OpenSearch"] },
-  { category: "Cloud & DevOps", items: ["AWS", "Azure", "Docker", "Kubernetes", "Terraform", "CI/CD", "GitHub Actions", "Jenkins"] },
-  { category: "Observability", items: ["Honeycomb", "Datadog", "Grafana", "Prometheus", "Splunk", "OpenTelemetry"] },
+  { category: "Languages", items: ["C#", "Java", "Python", "C++", "JavaScript", "TypeScript", "SQL", "Go"] },
+  { category: "Backend", items: [".NET Core", "ASP.NET Core", "Spring Boot", "REST", "gRPC", "Microservices", "Distributed Systems"] },
+  { category: "Frontend", items: ["React"] },
+  { category: "Cloud & Infrastructure", items: ["Azure", "AWS", "Docker", "Kubernetes", "Terraform", "CI/CD", "GitHub Actions", "Jenkins"] },
+  { category: "Observability", items: ["OpenTelemetry", "Honeycomb", "Datadog", "Grafana", "Prometheus", "Splunk"] },
+  { category: "Streaming & Messaging", items: ["Apache Pulsar", "Kafka", "RabbitMQ", "Flink", "Event-Driven Architecture"] },
+  { category: "Databases & Caching", items: ["PostgreSQL", "SQL Server", "Redis", "MongoDB", "Elasticsearch", "OpenSearch"] },
+  { category: "AI & ML", items: ["Generative AI", "LLMs", "RAG", "Vector Search", "FAISS", "PyTorch", "TensorFlow", "SageMaker"] },
 ];
 
 const EDUCATION = [
@@ -91,7 +91,7 @@ const EDUCATION = [
   {
     school: "Osmania University",
     degree: "Bachelor of Engineering, Electrical and Electronics Engineering",
-    period: "Aug 2016 – Jan 2020",
+    period: "Aug 2016 – Jul 2020",
     location: "Hyderabad, India",
   },
 ];
@@ -124,7 +124,7 @@ export default function ResumePage() {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Phone size={13} />
-              +1 (206) 627-0541
+              +1 (617) 834-7836
             </span>
             <Link
               href="mailto:srividya.bandari.swe@gmail.com"
@@ -166,12 +166,11 @@ export default function ResumePage() {
         {/* Summary */}
         <Section title="Summary">
           <p className="text-sm text-muted leading-relaxed">
-            Software Engineer with 4+ years of experience building distributed backend services,
-            event-driven workflows, real-time streaming systems, and ML-assisted decision pipelines.
-            Strong background in .NET Core, Java, Kafka, Pulsar, Flink, Redis, PostgreSQL,
-            AWS/Azure, observability, and production reliability. Delivered measurable impact across
-            high-volume systems, including 35% workflow latency reduction, 70% VIN decode p95
-            improvement, 45% faster issue detection, and stronger release safety.
+            Software Engineer with 3+ years of experience building distributed systems, cloud-native
+            services, event-driven platforms, and production reliability and observability systems.
+            Experienced in designing and operating high-scale C#/.NET and Java services across cloud
+            infrastructure, streaming, observability, and AI-enabled applications. Delivered measurable
+            improvements including 35% lower workflow latency and 70% lower p95 lookup latency.
           </p>
         </Section>
 
