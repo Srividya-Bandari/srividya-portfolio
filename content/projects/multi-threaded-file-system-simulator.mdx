@@ -1,0 +1,31 @@
+---
+title: "Multi-Threaded File System Simulator"
+tagline: "In-memory POSIX-style file system in C++ with 70% higher throughput than a single-threaded baseline across eight threads"
+tech: ["C++", "POSIX-Style APIs", "Read-Write Locks", "Concurrency"]
+description: "An in-memory POSIX-style file-system simulator in C++ with inode-based metadata, block allocation, concurrent file operations, and read-write locking — processing 100,000 mixed read/write operations across eight threads."
+github: "#"
+featured: true
+date: "2023-03-01"
+---
+
+## The Problem
+
+File systems are one of the clearest places to see concurrency tradeoffs up close. Every operation touches shared state — inodes, the block allocator, directory entries — and a naive implementation either serializes everything behind one lock or corrupts metadata under contention.
+
+The goal of this project was to build an in-memory, POSIX-style file system in C++ that stays correct under concurrent access while actually benefiting from multiple threads.
+
+## Design
+
+**POSIX-style API.** The simulator exposes familiar file operations (create, open, read, write, close, delete) so workloads look like real application I/O rather than a toy interface.
+
+**Inode-based metadata.** Each file is represented by an inode holding its metadata and the list of data blocks it owns, separating file identity from file contents just as real Unix file systems do.
+
+**Block allocation.** File data lives in fixed-size blocks managed by an allocator that hands out and reclaims blocks as files grow, shrink, and are deleted.
+
+**Read-write locking.** Instead of a single global lock, the simulator uses read-write locks so many readers can access a file at the same time while writers get exclusive access. This is where most of the throughput gain comes from: read-heavy workloads stop queuing behind each other.
+
+## Results
+
+- **70% higher throughput** than a single-threaded baseline
+- **100,000 mixed read/write operations** processed across **eight threads**
+- Correct metadata and block state maintained under concurrent file operations

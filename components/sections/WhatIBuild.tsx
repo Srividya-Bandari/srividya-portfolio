@@ -13,7 +13,7 @@ const PILLARS = [
       "RESTful & event-driven APIs",
       "Microservice decomposition",
       "Idempotency & exactly-once semantics",
-      "PostgreSQL, Redis, DynamoDB",
+      "PostgreSQL, Redis, SQL Server",
     ],
   },
   {
@@ -22,7 +22,7 @@ const PILLARS = [
     description:
       "Pipelines that move and transform data at volume, without drift, duplication, or silent failures that only show up in the dashboard.",
     points: [
-      "Kafka-backed streaming pipelines",
+      "Pulsar & Kafka event pipelines",
       "Deduplication & event sourcing",
       "Batch + real-time hybrid processing",
       "Observability from day one",
