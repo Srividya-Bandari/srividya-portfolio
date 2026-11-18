@@ -19,9 +19,7 @@ export default function ProjectsPage() {
             Projects
           </h1>
           <p className="text-muted text-lg leading-relaxed">
-            Things I&apos;ve built and the engineering decisions behind them.
-            Each case study covers the problem, the architecture, and what I
-            would do differently next time.
+            Things I&apos;ve built and the results.
           </p>
         </div>
 

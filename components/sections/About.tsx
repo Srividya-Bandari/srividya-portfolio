@@ -7,31 +7,31 @@ import { SkillGroup } from "@/lib/types";
 const SKILLS: SkillGroup[] = [
   {
     category: "Languages",
-    items: ["C#", "Java", "Python", "C++", "TypeScript", "SQL", "Go"],
+    items: ["C#", "Python", "Java", "Kotlin", "Go", "TypeScript", "SQL", "C++"],
   },
   {
-    category: "Backend",
-    items: [".NET Core", "ASP.NET Core", "Spring Boot", "gRPC", "REST APIs", "Microservices", "Distributed Systems"],
+    category: "Backend & Web",
+    items: [".NET Core", "ASP.NET Core", "Spring Boot", "FastAPI", "REST APIs", "Microservices", "React"],
   },
   {
-    category: "Streaming & Messaging",
-    items: ["Apache Pulsar", "Kafka", "RabbitMQ", "Flink", "Event-driven Architecture"],
+    category: "Streaming & Pipelines",
+    items: ["Apache Pulsar", "Kafka", "RabbitMQ", "Apache Airflow", "Apache Spark", "Snowflake"],
   },
   {
     category: "AI & ML",
-    items: ["Generative AI", "LLMs", "RAG", "FAISS", "PyTorch", "TensorFlow", "SageMaker"],
+    items: ["Agentic Workflows", "LLMs", "RAG", "FAISS", "Azure AI Foundry", "PyTorch", "LightGBM"],
   },
   {
-    category: "Databases & Caching",
-    items: ["PostgreSQL", "SQL Server", "Redis", "MongoDB", "OpenSearch"],
+    category: "Databases",
+    items: ["PostgreSQL", "PostGIS", "Redis", "OpenSearch", "Azure Blob Storage"],
   },
   {
-    category: "Cloud & Infrastructure",
-    items: ["Azure", "AWS", "Docker", "Kubernetes", "Terraform", "GitHub Actions", "Jenkins"],
+    category: "Cloud",
+    items: ["Azure", "AWS", "GCP", "Kubernetes", "Docker", "Terraform"],
   },
   {
-    category: "Observability",
-    items: ["OpenTelemetry", "Honeycomb", "Datadog", "Grafana", "Prometheus", "Splunk"],
+    category: "DevOps & Observability",
+    items: ["Honeycomb", "OpenTelemetry", "Grafana", "LaunchDarkly", "Jenkins", "CI/CD"],
   },
 ];
 
@@ -66,30 +66,28 @@ export function About() {
             className="md:col-span-3 space-y-5 text-muted leading-relaxed"
           >
             <p>
-              I&apos;m a software engineer with 3+ years of experience building
-              distributed systems, cloud-native services, event-driven
-              platforms, and the reliability and observability tooling that
-              keeps them running in production. Most of my work is in
-              high-scale C#/.NET and Java services across cloud
-              infrastructure, streaming, and AI-enabled applications.
+              I&apos;m a software engineer with 3+ years building scalable,
+              event-driven distributed systems in C#/.NET and Python on Azure.
+              My work spans architecture and implementation through rollouts,
+              observability, and on-call runbooks.
             </p>
             <p>
-              I currently work at Openlane, where I own and operate core
-              C#/.NET Core services in a distributed inspection workflow
-              platform processing 300K+ vehicle inspections and 3.5M+ events
-              per day. I&apos;ve shipped Apache Pulsar-based workflows with
-              replay-safe consumers that cut workflow latency by 35%, reduced
-              VIN lookup p95 latency by 70% with Redis caching, and led
-              production rollouts on Azure with Terraform, canary deployments,
-              and Honeycomb tracing.
+              At OPENLANE, I architected the unified full-stack inspection
+              platform (C#/.NET backend, React frontend), which handled
+              inspections of $50B+ in inventory over the last 16 months at
+              500K+ inspections a month and 99.9% uptime. I cut its workflow
+              latency 35%, saved $1.2M a year with a unified Carfax service,
+              cut VIN-decoding costs ~20%, and cut average arbitration time 37%
+              with an agentic, multimodal AI platform built on FastAPI and
+              Azure AI Foundry.
             </p>
             <p>
-              Before Openlane, I was a Research Software Engineer Intern with
-              Mayo Clinic / ASU, building a multi-view CNN on X-ray images and
-              patient metadata that raised osteoporosis-risk accuracy from 87%
-              to 95%. Earlier at Infosys, I optimized CI across 150+
-              repositories with SHA-based change detection and Redis-backed
-              Docker image deduplication, saving 1,000+ build hours a month.
+              Before OPENLANE, I was a Research Intern with University Realty /
+              ASU, building Apache Airflow data pipelines on PostgreSQL/PostGIS
+              and a LightGBM ranking model that predicts which brand opens at a
+              site, raising top-25 hit rate from 12.9% to 45.9%. Earlier at
+              Infosys, I saved 1,000+ CI build hours a month across 150+
+              repositories.
             </p>
             <p>
               I care about boring, well-instrumented systems. Observability

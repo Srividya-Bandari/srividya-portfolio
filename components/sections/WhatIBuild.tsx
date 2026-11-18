@@ -8,36 +8,36 @@ const PILLARS = [
     icon: Database,
     title: "Backend Systems",
     description:
-      "APIs, service architectures, and the data layers behind them. I care about correctness, latency, and cost — not in that order, but all three at once.",
+      "Event-driven services and APIs in C#/.NET, Java and Python on Azure, built for latency, cost and reliability.",
     points: [
-      "RESTful & event-driven APIs",
-      "Microservice decomposition",
-      "Idempotency & exactly-once semantics",
-      "PostgreSQL, Redis, SQL Server",
+      "Async, event-driven consumers",
+      "Idempotent deduplication & Redis caching",
+      "Vendor-agnostic APIs & hybrid vendor waterfalls",
+      "PostgreSQL, PostGIS & Redis",
     ],
   },
   {
     icon: GitBranch,
-    title: "Data Infrastructure",
+    title: "Pipelines & Reliability",
     description:
-      "Pipelines that move and transform data at volume, without drift, duplication, or silent failures that only show up in the dashboard.",
+      "Data and CI pipelines, plus the observability, rollouts and runbooks that keep production services healthy.",
     points: [
-      "Pulsar & Kafka event pipelines",
-      "Deduplication & event sourcing",
-      "Batch + real-time hybrid processing",
-      "Observability from day one",
+      "Apache Airflow DAGs on PostgreSQL/PostGIS",
+      "CI build optimization with Jenkins & Docker",
+      "Honeycomb metrics, dashboards & alerts",
+      "Canary rollouts with automatic rollback",
     ],
   },
   {
     icon: Cpu,
-    title: "AI + Developer Tools",
+    title: "Applied AI",
     description:
-      "Backend infrastructure for LLM-powered products — retrieval pipelines, API wrappers, evaluation loops, and the boring glue that makes them reliable.",
+      "LLM-powered systems that summarize, search and answer questions over emails, PDFs, images and call recordings.",
     points: [
-      "RAG pipelines & vector search",
-      "ML-assisted decision pipelines",
-      "Retrieval quality & evaluation tooling",
-      "Developer-facing internal APIs",
+      "Agentic, multimodal AI workflows",
+      "RAG pipelines & vector search (FAISS)",
+      "Azure AI Foundry & OpenAI API",
+      "ML ranking models (LightGBM)",
     ],
   },
 ];

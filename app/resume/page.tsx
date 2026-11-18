@@ -12,73 +12,71 @@ export const metadata: Metadata = {
 
 const EXPERIENCE = [
   {
-    company: "Openlane",
-    role: "Software Engineer",
+    company: "OPENLANE",
+    role: "Software Engineer I & II",
     period: "Jul 2023 – Present",
-    location: "Austin, TX",
-    tech: "C#, .NET Core, ASP.NET Core, Azure, Apache Pulsar, Redis, PostgreSQL, Terraform",
+    location: "Remote (Austin, TX)",
+    tech: "C#/.NET Core, Java (Spring Boot), Python (FastAPI), React, Azure, PostgreSQL, Redis",
     bullets: [
-      "Owned and operated core C#/.NET Core services in a distributed inspection workflow platform processing 300K+ vehicle inspections and 3.5M+ validation, integration, audit, and observability events per day across inspection, inventory, and VIN intelligence systems.",
-      "Designed and shipped Apache Pulsar-based event-driven workflows with replay-safe consumers, correlation IDs, schema-versioned payloads, and failure-isolated retry paths, reducing workflow latency by 35% while improving real-time state consistency.",
-      "Improved distributed-system reliability by implementing idempotent consumers, deduplication keys, exponential backoff, dead-letter handling, and downstream failure isolation, preventing duplicate processing and invalid state transitions during service degradation.",
-      "Optimized high-volume VIN decoding and reference-data lookups using Redis caching, TTL-based invalidation, and request coalescing, reducing p95 latency by 70% and lowering repeated third-party service calls.",
-      "Led production rollout of .NET services on Azure using Terraform-managed infrastructure, staged enablement, canary deployments, rollback mechanisms, and Honeycomb distributed tracing, enabling faster issue detection and safer releases.",
-      "Built ML-assisted inspection decision workflows using VIN intelligence, vehicle metadata, inspection signals, and historical transition features to support anomaly detection, duplicate detection, risk scoring, and manual-review routing.",
+      "Architected OPENLANE’s unified full-stack inspection platform (C#/.NET backend, React frontend) with 5+ cross-functional teams; in last 16 months Service handled inspections of $50B+ in inventory with over 500K inspections a month at 99.9% uptime.",
+      "Cut inspection workflow latency 35% with async Carfax & VIN-decoding consumers on a config-driven C#/.NET engine; built the React flow from VIN photo to report and shipped with zero downtime via LaunchDarkly-flagged parity runs and end-to-end tests.",
+      "Saved $1.2M a year (8% of Carfax spend) by cutting duplicate report requests across acquired marketplaces: designed, built and launched a unified Carfax service with idempotent deduplication, Redis caching and async callbacks to avoid vendor timeouts.",
+      "Cut average arbitration time by 37% by building an agentic, multimodal AI platform (Python FastAPI backend, Salesforce, Azure AI Foundry) that summarizes and caches case emails, PDFs, images and call recordings for automated review.",
+      "Cut VIN-decoding costs ~20% with my design’s caching and check-digit filters, which stop bad VINs before a paid vendor call, in a self-initiated Java Spring Boot to .NET migration to one vendor-agnostic API for all OPENLANE B2B and B2C clients; raised VIN-decode success from 92% to 98% with a hybrid vendor waterfall, communicated in design and code reviews.",
+      "Restored OBD2 Bluetooth scanner reliability to 98% within a week as on-call engineer: root-caused failures in 40% of one firmware cohort to a vendor SDK incompatibility; built firmware upgrade and recovery workflows into the Android mobile app.",
+      "Owned observability for .NET services on Azure: built Honeycomb metrics, dashboards and alerts, wrote the on-call runbooks for incidents, and led canary rollouts (1% → 10% → 50% → 100%) with automatic rollback on Terraform based Azure infrastructure.",
     ],
   },
   {
-    company: "Mayo Clinic / ASU",
-    role: "Research Software Engineer Intern",
+    company: "University Realty / ASU",
+    role: "Research Intern",
     period: "May 2022 – Aug 2022",
     location: "Phoenix, AZ",
-    tech: "Python, PyTorch, TensorFlow, Multi-view CNNs, SageMaker, Datadog",
+    tech: "Python, SQL, PostgreSQL/PostGIS, Apache Airflow, LightGBM, FastAPI",
     bullets: [
-      "Implemented a multi-view CNN combining X-ray images and patient metadata to predict osteoporosis risk, improving model accuracy from 87% to 95% and strengthening identification of high-risk cases.",
-      "Built preprocessing, enrichment, and validation pipelines for clinical imaging and patient data, reducing data-processing errors by 25% before model training and inference.",
-      "Modularized model training, evaluation, and inference components for integration with Mayo Clinic systems, enabling reuse across related clinical prediction workflows.",
+      "Turned 104 weekly snapshots of 1.17M stores across 3,060 brands into 7.9M store events (38K openings detected) with scheduled Apache Airflow DAGs running Python data pipelines on PostgreSQL/PostGIS.",
+      "Raised top-25 hit rate from 12.9% (store-count baseline) to 45.9% on 3,498 held-out openings by shipping a LightGBM ranking model that predicts which brand opens at a site; it scores ~2,259 brands in 125 ms and retrains weekly behind release gates.",
     ],
   },
   {
     company: "Infosys",
-    role: "Software Engineer Intern",
-    period: "Nov 2020 – Jun 2021",
+    role: "Software Engineer",
+    period: "Nov 2020 – Jul 2021",
     location: "Hyderabad, India",
-    tech: "Java, Python, Go, Spring Boot, Kafka, RabbitMQ, Redis, AWS, Docker, Jenkins, OpenSearch",
+    tech: "Java, Python, RabbitMQ, Redis, GCP, Docker, Jenkins, Gerrit, Artifactory, OpenSearch",
     bullets: [
-      "Optimized the Lead Verifier CI across 150+ repositories by implementing SHA-based change detection and Redis-backed Docker image deduplication, reducing redundant builds by 35%, image duplication by 50%, and saving 1,000+ build hours per month.",
-      "Developed Jenkins pipelines and Python automation to synchronize codebases from Qualcomm repositories into client systems and automatically provision compatible repositories.",
-      "Integrated RabbitMQ, Logstash, and OpenSearch to collect, process, and visualize build metrics and logs across infrastructure supporting 170+ concurrent builds.",
+      "Saved 1,000+ build hours a month across 150+ repositories by cutting redundant CI builds 35% and container image duplication 50% with SHA-based change detection and Redis-backed Docker image deduplication on Google Cloud Storage.",
+      "Cut full-pipeline restarts 18% and debugging time ~50% on 1,000+ weekly Gerrit CI jobs with Jenkins/Python retry blocks for transient failures and Artifactory links for multi-GB logs; built log and metrics monitoring for 170+ concurrent builds.",
     ],
   },
 ];
 
 const PROJECTS = [
   {
-    title: "RAG-Powered Document Q&A System",
-    tech: ["React", "Python", "FastAPI", "FAISS", "Docker", "Vector Search"],
+    title: "RAG Document Q&A System",
+    tech: ["RAG", "FAISS", "Vector Search", "Reranking", "OpenAI API"],
     bullets: [
-      "Built an end-to-end RAG application with a React frontend and FastAPI backend, supporting PDF upload, document indexing, semantic search, and source-grounded responses.",
-      "Implemented PDF ingestion, semantic chunking, FAISS retrieval, context ranking, and grounded Q&A; added retrieval quality checks that reduced irrelevant responses by 40% versus baseline generation.",
+      "Cut irrelevant answers 40% on a 100-question eval set by building a retrieval-augmented generation pipeline (hybrid FAISS vector search, reranking, OpenAI API) answering questions over PDFs with page citations.",
     ],
   },
   {
     title: "Multi-Threaded File System Simulator",
-    tech: ["C++", "POSIX-Style APIs", "Read-Write Locks", "Concurrency"],
+    tech: ["C++", "POSIX", "Multithreading", "Read/Write Locks", "Journaling", "Inodes"],
     bullets: [
-      "Built an in-memory POSIX-style file-system simulator in C++ supporting inode-based metadata, block allocation, concurrent file operations, and read-write locking; improved throughput by 70% over a single-threaded baseline while processing 100,000 mixed read/write operations across eight threads.",
+      "Raised throughput 70% over a single-threaded baseline by building a POSIX-compliant, Unix-style file system in C++ with multi-threaded read/write locks, journaling and inode data structures.",
     ],
   },
 ];
 
 const SKILLS = [
-  { category: "Languages", items: ["C#", "Java", "Python", "C++", "JavaScript", "TypeScript", "SQL", "Go"] },
-  { category: "Backend", items: [".NET Core", "ASP.NET Core", "Spring Boot", "REST", "gRPC", "Microservices", "Distributed Systems"] },
-  { category: "Frontend", items: ["React"] },
-  { category: "Cloud & Infrastructure", items: ["Azure", "AWS", "Docker", "Kubernetes", "Terraform", "CI/CD", "GitHub Actions", "Jenkins"] },
-  { category: "Observability", items: ["OpenTelemetry", "Honeycomb", "Datadog", "Grafana", "Prometheus", "Splunk"] },
-  { category: "Streaming & Messaging", items: ["Apache Pulsar", "Kafka", "RabbitMQ", "Flink", "Event-Driven Architecture"] },
-  { category: "Databases & Caching", items: ["PostgreSQL", "SQL Server", "Redis", "MongoDB", "Elasticsearch", "OpenSearch"] },
-  { category: "AI & ML", items: ["Generative AI", "LLMs", "RAG", "Vector Search", "FAISS", "PyTorch", "TensorFlow", "SageMaker"] },
+  { category: "Languages", items: ["C#", "Python", "Java", "Kotlin", "Go", "TypeScript", "JavaScript", "SQL", "C++"] },
+  { category: "Backend & Web", items: [".NET Core", "ASP.NET Core", "Spring Boot", "FastAPI", "REST APIs", "OAuth", "Microservices", "React"] },
+  { category: "Streaming & Pipelines", items: ["Apache Pulsar", "Kafka", "RabbitMQ", "Apache Airflow", "Apache Spark", "Snowflake", "Event-Driven Architecture"] },
+  { category: "Cloud", items: ["Azure", "Azure DevOps", "Azure AI Foundry", "AWS", "GCP", "Kubernetes", "Docker", "Terraform (IaC)", "Salesforce"] },
+  { category: "Databases", items: ["PostgreSQL", "PostGIS", "Redis", "OpenSearch", "Azure Blob Storage"] },
+  { category: "DevOps & Observability", items: ["Jenkins", "CI/CD", "Git", "Gerrit", "Artifactory", "LaunchDarkly", "OpenTelemetry", "Honeycomb", "Grafana"] },
+  { category: "AI & ML", items: ["Agentic Workflows", "LLMs", "Generative AI", "RAG", "Vector Search (FAISS)", "CNNs", "PyTorch", "TensorFlow", "LightGBM"] },
+  { category: "AI-Assisted Development", items: ["Claude Code", "GitHub Copilot", "Cursor"] },
 ];
 
 const EDUCATION = [
@@ -89,7 +87,7 @@ const EDUCATION = [
     location: "Tempe, USA",
   },
   {
-    school: "Osmania University",
+    school: "Osmania University [CBIT]",
     degree: "Bachelor of Engineering, Electrical and Electronics Engineering",
     period: "Aug 2016 – Jul 2020",
     location: "Hyderabad, India",
@@ -166,11 +164,11 @@ export default function ResumePage() {
         {/* Summary */}
         <Section title="Summary">
           <p className="text-sm text-muted leading-relaxed">
-            Software Engineer with 3+ years of experience building distributed systems, cloud-native
-            services, event-driven platforms, and production reliability and observability systems.
-            Experienced in designing and operating high-scale C#/.NET and Java services across cloud
-            infrastructure, streaming, observability, and AI-enabled applications. Delivered measurable
-            improvements including 35% lower workflow latency and 70% lower p95 lookup latency.
+            Software Engineer with 3+ years building scalable, event-driven distributed systems in
+            C#/.NET and Python on Azure. Architected OPENLANE&apos;s vehicle inspection platform
+            (processed $50B+ in inventory in the trailing 16 months), cut its workflow latency 35%,
+            saved $1.2M annually in Carfax costs and cut arbitration time 37% with a multimodal AI
+            platform.
           </p>
         </Section>
 
