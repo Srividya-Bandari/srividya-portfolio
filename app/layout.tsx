@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     template: "%s | Srividya Bandari",
   },
   description:
-    "Software Engineer with 3+ years building distributed systems, cloud-native services, event-driven platforms, and production reliability and observability systems.",
+    "Software Engineer with 3+ years building scalable, event-driven distributed systems in C#/.NET and Python on Azure.",
   keywords: [
     "Srividya Bandari",
     "Software Engineer",
@@ -22,8 +22,8 @@ export const metadata: Metadata = {
     ".NET",
     "Java",
     "Azure",
-    "Apache Pulsar",
-    "Kafka",
+    "Python",
+    "React",
     "Redis",
     "PostgreSQL",
   ],

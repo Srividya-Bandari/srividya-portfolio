@@ -1,48 +1,35 @@
 ---
-title: "RAG-Powered Document Q&A System"
-tagline: "End-to-end RAG app with a React frontend and FastAPI backend — PDF upload, semantic search, and grounded Q&A with 40% fewer irrelevant responses"
-tech: ["React", "Python", "FastAPI", "FAISS", "Docker", "Vector Search"]
-description: "End-to-end retrieval-augmented generation application with a React frontend and FastAPI backend that ingests PDFs, semantically chunks and indexes them in FAISS, retrieves context-ranked passages, and returns grounded answers — with retrieval-quality checks that cut irrelevant responses by 40%."
+title: "RAG Document Q&A System"
+tagline: "Retrieval-augmented generation over PDFs with page citations — 40% fewer irrelevant answers on a 100-question eval set"
+tech: ["FAISS", "OpenAI API", "Python", "FastAPI", "React", "PyMuPDF"]
+description: "A full-stack RAG app: upload a PDF, ask questions, and get answers grounded in that document with page citations. Hybrid FAISS vector search, reranking and the OpenAI API cut irrelevant answers 40% on a 100-question eval set."
 github: "https://github.com/Srividya-Bandari/rag-doc-qa"
 featured: true
-date: "2024-09-01"
 ---
 
-## The Problem
+## Overview
 
-Retrieval-Augmented Generation (RAG) as a pattern is straightforward on paper: index your documents, retrieve relevant chunks at query time, feed them to an LLM as context. In practice, the hard part is retrieval quality — specifically, the cases where your retriever returns chunks that are semantically adjacent to the query but don't actually contain the information needed to answer it. When those chunks get passed to the LLM as context, you get confident-sounding answers that are either partially wrong or entirely fabricated.
+A full-stack retrieval-augmented generation (RAG) app: upload a PDF, ask questions, and get answers grounded only in that document, with page citations.
 
-The project goal was to build an end-to-end RAG application for PDF documents — a React frontend for uploading documents and asking questions, backed by a FastAPI service — with two hard requirements: grounded answers (the system should cite the source passages it used) and quality gating (if retrieval confidence is too low, the system should say so rather than hallucinate).
+I cut irrelevant answers **40%** on a 100-question eval set by building the retrieval-augmented generation pipeline — hybrid FAISS vector search, reranking, and the OpenAI API.
 
-## Architecture
+## How It Works
 
-The frontend is a React app for uploading PDFs, asking questions, and viewing answers alongside their source passages. The backend is a FastAPI application with four main stages.
+1. **Upload.** The user uploads a PDF from the React UI.
+2. **Extract.** The FastAPI backend extracts page text with PyMuPDF.
+3. **Chunk.** Text is split into token-aware chunks (512 tokens, 50-token overlap).
+4. **Embed and index.** Chunks are embedded in batches with OpenAI embeddings and stored in a FAISS index with JSON metadata.
+5. **Retrieve.** Hybrid FAISS vector search with reranking selects the most relevant chunks for each question.
+6. **Answer.** The retrieved context is sent to the chat model with strict grounding instructions, and the answer comes back with source citations (`S# | page N`), as a regular or streaming (SSE) response.
 
-**1. Ingestion and chunking.** PDFs are uploaded via a REST endpoint. The service extracts text, then applies semantic chunking: rather than splitting on fixed token counts, chunks are split at natural boundaries (section headings, paragraph breaks) and merged or split further to stay within a target token budget. Metadata — document title, page number, section heading — is preserved with each chunk.
+The app also supports multi-turn chat.
 
-**2. Embedding and FAISS indexing.** Chunks are embedded using a sentence-transformer model and stored in a FAISS index. FAISS's approximate nearest-neighbor search gives sub-millisecond retrieval even over large document collections. The index is persisted to disk and loaded at startup; new documents are added incrementally without full reindexing.
+## Stack
 
-**3. Retrieval and context ranking.** At query time, the query is embedded using the same model and the top-k chunks are retrieved from FAISS. A reranking step scores each retrieved chunk for relevance to the query using a cross-encoder — which is slower than the bi-encoder used for initial retrieval but more accurate. Chunks below a relevance threshold are dropped before being passed to the LLM.
-
-**4. Generation with quality gating.** The ranked chunks are assembled into a context window and passed to the LLM with a prompt that instructs it to answer only from the provided context and to indicate when the context is insufficient. The response includes citations (document title + page number) for each claim. If no chunks pass the relevance threshold, the service returns a "insufficient context" response rather than attempting generation.
-
-## Key Decisions
-
-**Semantic chunking over fixed-size chunking.** Fixed-size chunking is simpler to implement, but it frequently splits concepts across chunk boundaries in ways that hurt retrieval — a chunk ending mid-sentence doesn't embed well, and a retriever won't find it when the query uses complete phrasing. Semantic chunking is slower at ingestion time but produces meaningfully better retrieval precision.
-
-**FAISS with a cross-encoder reranker.** The two-stage retrieval pattern (fast bi-encoder for recall, slower cross-encoder for precision) is a well-known approach, and it works. The bi-encoder retrieves candidates in milliseconds even at scale; the cross-encoder reranker adds latency but substantially improves the quality of what gets passed to the LLM. The relevance threshold at the reranking stage is the main lever for controlling the false-positive rate.
-
-**Quality gating as a first-class feature.** Most RAG tutorials treat quality gating as an afterthought. It shouldn't be. An LLM that says "I don't have enough context to answer this" is more useful than one that confidently makes something up. The threshold calibration took iteration — too aggressive and the system refuses to answer questions it could handle; too permissive and irrelevant chunks make it through.
+- **Backend:** Python, FastAPI, OpenAI SDK, FAISS, PyMuPDF, tiktoken, pytest
+- **Frontend:** React, Vite, Tailwind CSS
 
 ## Results
 
-- **40% reduction in irrelevant responses** versus a baseline system with no retrieval quality gating
-- Sub-second end-to-end latency for queries over document collections up to ~10K pages
-- Grounded responses with source citations for every claim, enabling users to verify answers
-- Dockerized service deployable as a standalone API, with persistent FAISS index across restarts
-
-## What I'd Do Differently
-
-The chunking strategy was tuned manually by eyeballing retrieval quality on a test set. A more rigorous evaluation framework — with labeled query/answer pairs and automated retrieval metrics (MRR, nDCG) — would have made it easier to compare chunking strategies and threshold settings systematically.
-
-FAISS works well but doesn't support filtering by document metadata at retrieval time (e.g., "search only within documents from this year"). For a production multi-tenant system, I'd use a vector database that supports metadata filtering natively — Qdrant or Weaviate — rather than implementing post-retrieval filtering in application code.
+- **40% fewer irrelevant answers** on a 100-question eval set
+- Answers grounded in the uploaded PDF, with page citations

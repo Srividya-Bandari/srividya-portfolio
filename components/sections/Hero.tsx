@@ -41,7 +41,7 @@ export function Hero() {
               Software Engineer &mdash; Backend &amp; Distributed Systems
             </p>
             <p className="text-base md:text-lg text-muted font-medium mt-1">
-              Building Distributed Data Processing Pipelines at Scale
+              Building Scalable, Event-Driven Distributed Systems
             </p>
           </motion.div>
 
@@ -51,9 +51,10 @@ export function Hero() {
             transition={{ duration: 0.7, delay: 0.4 }}
             className="text-base md:text-lg text-muted max-w-2xl leading-relaxed mb-10"
           >
-            I build scalable backend systems and distributed data processing
-            pipelines that handle millions of events a day — with a focus on
-            throughput, correctness, and cost.
+            I build scalable, event-driven distributed systems in C#/.NET and
+            Python on Azure. At OPENLANE, I architected the vehicle inspection
+            platform that processed $50B+ in inventory in the trailing 16
+            months.
           </motion.p>
 
           <motion.div

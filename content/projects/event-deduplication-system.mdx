@@ -1,52 +1,49 @@
 ---
-title: "Vehicle Inspection Workflow Platform"
-tagline: "Distributed .NET Core platform processing 300K+ daily inspections and 3.5M+ events/day at Openlane"
-tech: ["C#", ".NET Core", "Azure", "Apache Pulsar", "Redis", "PostgreSQL", "Terraform", "Honeycomb"]
-description: "Core backend service for Openlane's vehicle inspection platform — event-driven, ML-assisted, and observable by design. Handles 300K+ daily vehicle inspections across inspection, inventory, VIN intelligence, and downstream systems."
+title: "Vehicle Inspection Platform at OPENLANE"
+tagline: "Unified full-stack inspection platform (C#/.NET + React) that handled inspections of $50B+ in inventory over 16 months at 99.9% uptime"
+tech: ["C#", ".NET Core", "React", "Azure", "Redis", "PostgreSQL", "LaunchDarkly", "Honeycomb", "Terraform"]
+description: "OPENLANE's unified full-stack inspection platform, which I architected with 5+ cross-functional teams, plus the Carfax and VIN-decoding services I built around it."
 github: "#"
 featured: true
-date: "2025-01-01"
 ---
 
-## The Problem
+## The Platform
 
-Openlane runs one of the largest automotive remarketing platforms in North America. Every vehicle moving through the marketplace — listed for inspection, validated, routed for auction — is tracked by a workflow system that coordinates state across inspection, inventory, VIN intelligence, and a constellation of downstream services.
+I architected OPENLANE's unified full-stack inspection platform — a C#/.NET backend with a React frontend — with 5+ cross-functional teams. In the last 16 months, the service handled inspections of **$50B+ in inventory**, with **over 500K inspections a month** at **99.9% uptime**.
 
-By the time I took ownership of core services in this platform, the numbers had grown to a point where the system's weak spots were visible: 300K+ vehicle inspections a day, 3.5M+ events flowing through validation, integration, audit, and observability pipelines. Synchronous processing steps that were fine at lower volume were now contention points. Event consumers weren't replay-safe. The deployment process involved too much manual coordination for a system this critical.
+## Faster Inspection Workflows
 
-The job was to make the platform reliable, observable, and deployable without ceremony — and to add ML-assisted signal to inspection decisions that had previously been purely rule-based.
+- Cut inspection workflow latency **35%** with async Carfax and VIN-decoding consumers on a config-driven C#/.NET engine.
+- Built the React flow from VIN photo to report.
+- Shipped with zero downtime via LaunchDarkly-flagged parity runs and end-to-end tests.
 
-## Architecture
+## Unified Carfax Service
 
-The system is a set of C#/.NET Core services running on Azure and communicating over Apache Pulsar. The design rests on a few principles that shaped everything else.
+I saved **$1.2M a year (8% of Carfax spend)** by cutting duplicate report requests across acquired marketplaces. I designed, built and launched a unified Carfax service with:
 
-**Event propagation with replay safety.** Every event carries a correlation ID, a schema-versioned payload, and enough metadata to replay it correctly if a consumer restarts mid-processing. Consumers checkpoint progress explicitly rather than relying on offset auto-commit. Failure-isolated retry paths mean one broken consumer doesn't block the others.
+- Idempotent deduplication
+- Redis caching
+- Async callbacks to avoid vendor timeouts
 
-**ML-assisted decision pipelines.** The most interesting addition was bringing ML signal into inspection decisions. Workflow events are enriched with VIN intelligence (vehicle specs, recall history, known defect patterns), historical state-transition data, and real-time inspection signals. An ML model scores each vehicle for anomalous transitions, duplicate processing signals, and inconsistent attributes. High-risk vehicles are routed to manual-review queues; low-risk vehicles proceed through automated paths. This replaced a fragile set of hard-coded rules that required engineering involvement to update.
+## Vendor-Agnostic VIN Decoding
 
-**Idempotent consumers with failure isolation.** Every consumer is idempotent: events carry deduplication keys, processing is transactional where it needs to be, and the dead-letter handling is explicit. Vendor failures are isolated at the consumer level — a degraded third-party integration doesn't cascade into invalid inspection state transitions.
+In a self-initiated Java Spring Boot to .NET migration, I moved VIN decoding to one vendor-agnostic API for all OPENLANE B2B and B2C clients, and communicated the design in design and code reviews.
 
-**Terraform-managed canary rollouts.** Infrastructure on Azure is managed with Terraform, and new logic ships through staged enablement. Traffic is promoted through stages (1% → 10% → 50% → 100%) with Honeycomb-based health checks at each gate. If error rates or latency deviate from baseline during a stage, rollback is automatic.
+- My design's caching and check-digit filters stop bad VINs before a paid vendor call, cutting VIN-decoding costs **~20%**.
+- A hybrid vendor waterfall raised VIN-decode success from **92% to 98%**.
 
-## Key Decisions
+## Observability and Rollouts
 
-**Apache Pulsar over Kafka.** Pulsar was already Openlane's standard messaging layer, which made the choice straightforward operationally. That said, Pulsar's multi-tenancy model and built-in tiered storage are genuinely useful at this scale: topics can be namespaced by workflow domain, and event history is retained without managing separate archival infrastructure.
+I owned observability for .NET services on Azure:
 
-**ML for anomaly detection, not classification.** The ML layer doesn't try to approve or reject inspections — it generates risk scores that feed rule engines and review queues. Keeping humans in the loop for high-risk decisions made the system easier to audit, easier to tune, and easier to get organizational buy-in for.
-
-**Idempotency as a first-class constraint.** At 3.5M events/day, the question isn't whether duplicates will happen — Pulsar redelivers, consumers crash, deploys reprocess. The question is whether your system handles them correctly. Every consumer was designed idempotent from the start, not retrofitted.
+- Built Honeycomb metrics, dashboards and alerts
+- Wrote the on-call runbooks for incidents
+- Led canary rollouts (1% → 10% → 50% → 100%) with automatic rollback on Terraform-based Azure infrastructure
 
 ## Results
 
-- **300K+ daily vehicle inspections** processed reliably
-- **3.5M+ events/day** flowing through validation, integration, audit, and observability pipelines
-- **35% reduction in workflow latency** after moving synchronous steps to Pulsar-backed async processing
-- **70% lower p95 latency** for VIN decoding and reference-data lookups via Redis caching with TTL-based invalidation and request coalescing, with fewer repeated third-party calls
-- **Faster issue detection and safer releases** through canary deployments, rollback mechanisms, and Honeycomb distributed tracing
-- ML-assisted risk scoring routed anomalous vehicles to review queues, replacing a brittle set of hand-maintained rules
-
-## What I'd Do Differently
-
-The ML feature pipeline was built incrementally, which meant the feature engineering logic ended up scattered across multiple services. A centralized feature store — even a lightweight one — would have made it easier to add new signals and to reproduce training data for model retraining.
-
-On the Pulsar topology: I'd design the partition count and consumer group structure upfront based on projected throughput. We ended up resizing partitions reactively, which required coordination across teams and a maintenance window.
+- **$50B+** in inventory inspected in the last 16 months; **500K+ inspections a month** at **99.9% uptime**
+- **35%** lower inspection workflow latency
+- **$1.2M a year** saved on Carfax (8% of spend)
+- **~20%** lower VIN-decoding costs; VIN-decode success up from **92% to 98%**
+- Zero-downtime release via LaunchDarkly-flagged parity runs and end-to-end tests

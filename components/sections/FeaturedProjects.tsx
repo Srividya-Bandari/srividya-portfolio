@@ -28,8 +28,8 @@ export function FeaturedProjects({ projects }: FeaturedProjectsProps) {
             <div className="w-12 h-[2px] bg-accent" />
           </div>
           <p className="text-muted max-w-md">
-            Selected work from production systems &mdash; the engineering
-            decisions, tradeoffs, and outcomes.
+            Selected work from OPENLANE and my own projects &mdash; what I
+            built and the results.
           </p>
         </motion.div>
 
